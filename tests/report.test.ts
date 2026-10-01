@@ -170,15 +170,15 @@ test("exports one styled worksheet with typed durations, formulas, totals and on
   assert.equal(ws.pageSetup.fitToHeight, 1);
   assert.equal(ws.pageSetup.margins?.left, 0.25);
   assert.equal(ws.pageSetup.margins?.top, 0.75);
-  assert.equal(ws.getCell("D11").value, 120 / 1440);
-  assert.equal(ws.getCell("D11").numFmt, "[h]:mm");
-  assert.equal(ws.getCell("E11").result, 1);
-  assert.equal(ws.getCell("I13").result, 6);
+  assert.equal(ws.getCell("D13").value, 120 / 1440);
+  assert.equal(ws.getCell("D13").numFmt, "[h]:mm");
+  assert.equal(ws.getCell("E13").result, 1);
+  assert.equal(ws.getCell("I15").result, 6);
   const buffer = await wb.xlsx.writeBuffer();
   const saved = read(buffer, { type: "buffer" });
   assert.deepEqual(saved.SheetNames, ["Activity Dashboard"]);
-  assert.equal(saved.Sheets["Activity Dashboard"].I13.v, 6);
-  assert.equal(saved.Sheets["Activity Dashboard"].E11.v, 1);
+  assert.equal(saved.Sheets["Activity Dashboard"].I15.v, 6);
+  assert.equal(saved.Sheets["Activity Dashboard"].E13.v, 1);
   assert.equal(
     createReportWorkbook(report, dataset, "A4").worksheets[0].pageSetup
       .paperSize,
@@ -201,4 +201,24 @@ test("sample is synthetic, reconciles totals, and remains a valid export", () =>
     ),
     /SAMPLE DATA/,
   );
+});
+
+
+test("reference layout keeps 9 and 36 employees within the printable Letter height", () => {
+  for (const count of [9, 36]) {
+    const rows: unknown[][] = [HEADERS];
+    for (let i = 0; i < count; i++) {
+      rows.push(row("PICK", `EMP${i}`, "08:00"), row("", `EMP${i}`, "09:00"));
+    }
+    const dataset = parseRows(rows, "layout.csv", "Daily Activity");
+    const report = buildReport(dataset, "2026-09-18");
+    const ws = createReportWorkbook(report, dataset).worksheets[0];
+    let height = 0;
+    for (let r = 1; r <= 13 + count + 3; r++) height += ws.getRow(r).height ?? 21;
+    assert.ok(height <= 684.01, `Printable height exceeded for ${count} employees: ${height}`);
+    assert.equal(ws.getCell("A7").value, "PICK");
+    assert.equal(ws.getCell("C7").value, count * 2);
+    assert.equal(ws.getCell("A10").value, "REPLN");
+    assert.equal(ws.getCell("C13").value, 2);
+  }
 });

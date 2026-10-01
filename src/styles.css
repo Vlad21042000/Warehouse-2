@@ -1742,8 +1742,9 @@ h1 {
   #print-report {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    height: var(--report-height, 9.42in);
+    width: var(--report-width, 8in);
+    height: auto;
+    min-height: var(--report-height, 9.42in);
     font-size: 9pt;
     color: #23344a;
   }
@@ -1792,14 +1793,16 @@ h1 {
   .print-table {
     flex: 1;
     min-width: 0;
-    font-size: 9pt;
+    --row-font: min(9pt, calc(270pt / var(--employee-count)));
+    --row-padding: min(1pt, calc(40pt / var(--employee-count)));
+    font-size: var(--row-font);
     white-space: normal;
     table-layout: fixed;
     line-height: 1.05;
   }
   .print-table th,
   .print-table td {
-    padding: 1pt 3pt !important;
+    padding: var(--row-padding) 3pt !important;
     text-align: center;
   }
   .print-table th:nth-child(2) {
@@ -1816,7 +1819,7 @@ h1 {
     width: 6%;
   }
   .print-table tbody th {
-    font-size: 9pt;
+    font-size: var(--row-font);
     overflow-wrap: anywhere;
   }
   .print-table tbody tr {
@@ -1826,11 +1829,11 @@ h1 {
     display: block;
   }
   .print-table .rank-number {
-    font-size: 9pt;
+    font-size: var(--row-font);
     color: inherit;
   }
   .print-table td {
-    font-size: 9pt;
+    font-size: var(--row-font);
   }
   .print-table .rank-1 {
     background: #fff1b8 !important;

@@ -113,7 +113,7 @@ export function createReportWorkbook(
   });
   // Allocate the remaining printable height to rows, including short reports.
   const availableHeight = (paper === "Letter" ? 11 : 11.69) * 72 - 108;
-  const rowHeight = Math.max(10, (availableHeight - 258) / Math.max(report.employees.length, 1));
+  const rowHeight = (availableHeight - 258) / Math.max(report.employees.length, 1);
   report.employees.forEach((e, index) => {
     const r = start + index;
     const row = ws.getRow(r);
@@ -135,14 +135,14 @@ export function createReportWorkbook(
     row.eachCell({ includeEmpty: true }, (cell, col) => {
       cell.font = {
         name: "Calibri",
-        size: rowHeight < 16 ? 9 : 10,
+        size: Math.min(10, rowHeight * 0.7),
         bold: col === 2 || col === 9,
         color: { argb: "20334C" },
       };
       cell.alignment = {
         horizontal: col === 2 ? "left" : "center",
         vertical: "middle",
-        wrapText: col === 2,
+        wrapText: false,
       };
       cell.fill = {
         type: "pattern",

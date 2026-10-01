@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -169,6 +169,28 @@ export default function App() {
         (a, b) => b.counts.RECEIPT - a.counts.RECEIPT,
       )[0]
     : null;
+
+  useEffect(() => {
+    const fitPrint = () => {
+      const element = document.getElementById("print-report");
+      if (!element) return;
+      element.style.zoom = "1";
+      // Measure the actual print layout, including wrapped headings and notes.
+      const height = Math.max(element.scrollHeight, element.getBoundingClientRect().height);
+      const printableHeight = (paper === "Letter" ? 9.5 : 10.19) * 96;
+      if (height > 0) element.style.zoom = String(Math.min(1, (printableHeight - 4) / height));
+    };
+    const resetPrint = () => {
+      const element = document.getElementById("print-report");
+      if (element) element.style.zoom = "1";
+    };
+    window.addEventListener("beforeprint", fitPrint);
+    window.addEventListener("afterprint", resetPrint);
+    return () => {
+      window.removeEventListener("beforeprint", fitPrint);
+      window.removeEventListener("afterprint", resetPrint);
+    };
+  }, [paper, report]);
 
   function activate(data: Dataset) {
     setDataset(data);
@@ -929,7 +951,7 @@ export default function App() {
         <section
           id="print-report"
           style={
-            { "--employee-count": report.employees.length, "--report-height": paper === "Letter" ? "9.42in" : "10.11in" } as CSSProperties
+            { "--employee-count": Math.max(1, report.employees.length), "--report-width": paper === "Letter" ? "8in" : "7.77in", "--report-height": paper === "Letter" ? "9.42in" : "10.11in" } as CSSProperties
           }
         >
           <header>

@@ -1,3 +1,4 @@
+import { change, compareEmployees, demoComparison, findTransactions, heatmapRows, hourlyActivity, previousReport } from '../src/analytics';
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -225,4 +226,61 @@ test("automatically fits small and large reports on both paper sizes", () => {
     assert.ok((ws.getCell("B13").font.size ?? 0) <= ws.getRow(13).height!);
    }
   }
+});
+
+test('retains optional order/item metadata without changing activity counts', () => {
+  const values = row('PICK', 'ALEX', '08:00');
+  values[1] = 'TASK-9'; values[2] = 'TRIP-4'; values[3] = 'SO-001'; values[5] = 'SKU-07'; values[6] = 'A-01'; values[7] = 'PACK';
+  const dataset = parseRows([HEADERS, values], 'trace.csv', 'Daily');
+  assert.equal(dataset.transactions[0].order, 'SO-001');
+  assert.equal(dataset.transactions[0].item, 'SKU-07');
+  assert.equal(dataset.transactions[0].from, 'A-01');
+  assert.equal(dataset.transactions[0].quantity, '999');
+  assert.equal(dataset.transactions[0].task, 'TASK-9');
+  assert.equal(buildReport(dataset, '2026-09-18').total, 1);
+  const minimal = parseRows([['Activity', 'Employee', 'Date'], ['PUT', 'SAM', '09/18/2026']], 'minimal.csv', 'Daily');
+  assert.equal(minimal.transactions[0].order, '');
+  assert.equal(minimal.transactions[0].timestamp, null);
+});
+
+
+test('hourly charts and heatmap reconcile counts including missing and midnight timestamps', () => {
+  const dataset = parseRows([HEADERS, row('PICK', 'ALEX', '00:00'), row('PUT', 'ALEX', '23:59'), row('RECEIPT', 'SAM', ''), row('PICK', 'JDEJOBS', '00:00'), row('PICK', 'ALEX', '09:00', '09/19/2026')], 'hours.csv', 'Daily');
+  const rows = dataset.transactions.filter(row => row.date === '2026-09-18');
+  const hourly = hourlyActivity(rows);
+  assert.equal(hourly.hours[0], 1); assert.equal(hourly.hours[23], 1); assert.equal(hourly.missing, 1);
+  assert.equal(hourly.hours.reduce((sum, value) => sum + value, 0) + hourly.missing, 3);
+  assert.equal(hourlyActivity(rows, 'RECEIPT').missing, 1);
+  const heat = heatmapRows(rows);
+  assert.equal(heat.find(row => row.employee === 'ALEX')?.total, 2);
+  assert.equal(heat.find(row => row.employee === 'SAM')?.missing, 1);
+  assert.equal(heatmapRows(rows, 'PICK').length, 1);
+});
+
+test('comparison includes employees absent on either day and handles zero baselines', () => {
+  const dataset = parseRows([HEADERS, row('PICK', 'ALEX', '08:00'), row('PUT', 'SAM', '09:00'), row('PICK', 'ALEX', '08:00', '09/19/2026'), row('PICK', 'ALEX', '09:00', '09/19/2026'), row('RECEIPT', 'NEW', '10:00', '09/19/2026')], 'comparison.csv', 'Daily');
+  const current = buildReport(dataset, '2026-09-19');
+  const previous = previousReport(dataset, current.date)!;
+  assert.equal(previous.date, '2026-09-18');
+  const result = compareEmployees(current, previous);
+  assert.equal(result.find(row => row.employee === 'ALEX')?.currentCounts.PICK, 2);
+  assert.equal(result.find(row => row.employee === 'SAM')?.delta, -1);
+  assert.equal(result.find(row => row.employee === 'NEW')?.percent, null);
+  assert.equal(result.reduce((sum, row) => sum + row.delta, 0), current.total - previous.total);
+  assert.deepEqual(change(3, 2), { delta: 1, percent: 50 });
+  assert.deepEqual(change(0, 0), { delta: 0, percent: null });
+  assert.equal(previousReport(dataset, '2026-09-18'), null);
+});
+
+test('lookup is case-insensitive, preserves duplicates, and does not match unrelated fields', () => {
+  const values = row('PICK', 'ALEX', '08:00'); values[3] = 'SO-001'; values[5] = 'SKU-ABC';
+  const dataset = parseRows([HEADERS, values, values], 'search.csv', 'Daily');
+  assert.equal(findTransactions(dataset.transactions, ' so-001 ', 'order').length, 2);
+  assert.equal(findTransactions(dataset.transactions, 'sku-a', 'item').length, 2);
+  assert.equal(findTransactions(dataset.transactions, 'ALEX').length, 0);
+  assert.equal(findTransactions(dataset.transactions, 'SO-001', 'item').length, 0);
+  assert.equal(findTransactions(dataset.transactions, '').length, 0);
+  const before = demoComparison(createDemo());
+  assert.equal(before.sample, true);
+  assert.ok(before.transactions.every(row => row.date === '2026-09-17' && (row.timestamp === null || new Date(row.timestamp).toISOString().startsWith('2026-09-17'))));
 });

@@ -204,21 +204,25 @@ test("sample is synthetic, reconciles totals, and remains a valid export", () =>
 });
 
 
-test("reference layout keeps 9 and 36 employees within the printable Letter height", () => {
-  for (const count of [9, 36]) {
+test("automatically fits small and large reports on both paper sizes", () => {
+  for (const count of [1, 9, 36, 80, 150, 300]) {
+   for (const paper of ["Letter", "A4"] as const) {
     const rows: unknown[][] = [HEADERS];
     for (let i = 0; i < count; i++) {
       rows.push(row("PICK", `EMP${i}`, "08:00"), row("", `EMP${i}`, "09:00"));
     }
     const dataset = parseRows(rows, "layout.csv", "Daily Activity");
     const report = buildReport(dataset, "2026-09-18");
-    const ws = createReportWorkbook(report, dataset).worksheets[0];
+    const ws = createReportWorkbook(report, dataset, paper).worksheets[0];
     let height = 0;
-    for (let r = 1; r <= 13 + count + 3; r++) height += ws.getRow(r).height ?? 21;
-    assert.ok(height <= 684.01, `Printable height exceeded for ${count} employees: ${height}`);
+    for (let r = 1; r <= 13 + count + 2; r++) height += ws.getRow(r).height ?? 21;
+    assert.ok(height <= (paper === "Letter" ? 684.01 : 733.69), `Printable height exceeded for ${count} employees: ${height}`);
     assert.equal(ws.getCell("A7").value, "PICK");
     assert.equal(ws.getCell("C7").value, count * 2);
     assert.equal(ws.getCell("A10").value, "REPLN");
     assert.equal(ws.getCell("C13").value, 2);
+    assert.equal(ws.pageSetup.fitToHeight, 1);
+    assert.ok((ws.getCell("B13").font.size ?? 0) <= ws.getRow(13).height!);
+   }
   }
 });

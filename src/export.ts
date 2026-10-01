@@ -50,7 +50,7 @@ export function createReportWorkbook(
     const cell = ws.getCell(range.split(":")[0]);
     cell.value = value;
     cell.font = { name: "Calibri", size: 11, color: { argb: color }, bold };
-    cell.alignment = { vertical: "middle", wrapText: true };
+    cell.alignment = { vertical: "middle", wrapText: true, horizontal: typeof value === "number" ? "center" : "left" };
     if (fill)
       cell.fill = {
         type: "pattern",

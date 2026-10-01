@@ -34,6 +34,7 @@ import {
   type Employee,
 } from "./report";
 import type { ImportResult } from "./import";
+import Insights from "./Insights";
 
 const n = (value: number) => value.toLocaleString("en-CA");
 const activityNames: Record<Activity, string> = {
@@ -47,9 +48,11 @@ const initialData = createDemo();
 function EmployeeTable({
   employees,
   compact = false,
+  onEmployee,
 }: {
   employees: Employee[];
   compact?: boolean;
+  onEmployee?: (employee: string) => void;
 }) {
   const totals = employees.reduce(
     (acc, e) => ({
@@ -100,7 +103,7 @@ function EmployeeTable({
                     {e.employee.replace(/[^A-Z]/g, "").slice(0, 2)}
                   </span>
                 )}
-                {e.employee}
+                {onEmployee && !compact ? <button className="employee-link" onClick={() => onEmployee(e.employee)} aria-label={`View ${e.employee} activity`}>{e.employee}</button> : e.employee}
               </span>
             </th>
             <td>{n(e.counts.PICK)}</td>
@@ -133,6 +136,8 @@ function EmployeeTable({
 }
 
 export default function App() {
+  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
+  const [reportSession, setReportSession] = useState(0);
   const [dataset, setDataset] = useState<Dataset | null>(initialData);
   const [date, setDate] = useState(initialData.dates.at(-1)!);
   const [imported, setImported] = useState<ImportResult | null>(null);
@@ -193,6 +198,8 @@ export default function App() {
   }, [paper, report]);
 
   function activate(data: Dataset) {
+    setReportSession(session => session + 1);
+    setSelectedEmployee(null);
     setDataset(data);
     setDate(data.dates.at(-1)!);
     setSearch("");
@@ -306,6 +313,7 @@ export default function App() {
     input.current?.click();
   }
   function clearReport() {
+    setSelectedEmployee(null);
     setDataset(null);
     setImported(null);
     setSearch("");
@@ -338,6 +346,7 @@ export default function App() {
               <LayoutDashboard size={19} />
               Overview
             </a>
+            <a href="#shift-insights" className="nav-item"><BarChart3 size={19}/>Shift intelligence</a>
             <button className="nav-item" onClick={openUpload}>
               <Upload size={19} />
               Import report
@@ -733,7 +742,7 @@ export default function App() {
                     ))}
                   </div>
                   <div className="table-scroll">
-                    <EmployeeTable employees={visible} />
+                    <EmployeeTable employees={visible} onEmployee={setSelectedEmployee} />
                   </div>
                   {!visible.length && (
                     <div className="no-results">
@@ -767,6 +776,7 @@ export default function App() {
                     </span>
                   </div>
                 </section>
+                <Insights key={reportSession} dataset={dataset} report={report} selectedEmployee={selectedEmployee} onEmployee={setSelectedEmployee} />
                 <div className="below-report">
                   <details className="import-details">
                     <summary>Report details & calculation notes</summary>

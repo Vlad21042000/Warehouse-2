@@ -21,6 +21,14 @@ export type Transaction = {
   employee: string;
   date: string;
   timestamp: number | null;
+  order?: string;
+  item?: string;
+  task?: string;
+  trip?: string;
+  from?: string;
+  to?: string;
+  quantity?: string;
+  uom?: string;
 };
 export type Audit = {
   sourceRows: number;
@@ -158,9 +166,14 @@ export function parseRows(
     employee: ["user", "username", "employee", "userid"],
     date: ["date", "transactiondate"],
     time: ["time", "transactiontime"],
+    order: ["orderno", "ordernumber", "order", "salesorder"],
+    item: ["itemnumber", "itemno", "item", "sku"],
+    task: ["task", "tasknumber"], trip: ["trip", "tripnumber"],
+    from: ["fromlocation", "from"], to: ["tolocation", "to"],
+    quantity: ["qty", "quantity"], uom: ["uom", "unitofmeasure"],
   };
   let header = -1;
-  let columns = { activity: -1, employee: -1, date: -1, time: -1 };
+  let columns = { activity: -1, employee: -1, date: -1, time: -1, order: -1, item: -1, task: -1, trip: -1, from: -1, to: -1, quantity: -1, uom: -1 };
   for (let i = 0; i < Math.min(rows.length, 100); i++) {
     const cells = rows[i].map(normalize);
     const candidate = Object.fromEntries(
@@ -224,6 +237,10 @@ export function parseRows(
       date,
       timestamp:
         time === null ? null : Date.parse(date + "T00:00:00Z") + time * 1000,
+      order: text(row[columns.order]), item: text(row[columns.item]),
+      task: text(row[columns.task]), trip: text(row[columns.trip]),
+      from: text(row[columns.from]), to: text(row[columns.to]),
+      quantity: text(row[columns.quantity]), uom: text(row[columns.uom]),
     });
   }
   audit.included = transactions.length;

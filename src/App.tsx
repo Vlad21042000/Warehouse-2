@@ -795,6 +795,11 @@ export default function App() {
                     </select>
                   </label>
                 </div>
+                {!dataset.sample && report.counts.PICK === 0 && (
+                  <div className="message warning" role="status">
+                    No PICK lines were recognized for {formatDate(report.date)}. Check the selected date and worksheet. {dataset.audit.unsupported > 0 ? `${dataset.audit.unsupported} rows have unsupported transaction types; they were not counted. ` : ""}Confirm that your source contains PICK transactions for this date.
+                  </div>
+                )}
                 {dataset.audit.missingTime > 0 && (
                   <div className="message warning">
                     {n(dataset.audit.missingTime)} imported rows have missing or
@@ -924,7 +929,7 @@ export default function App() {
         <section
           id="print-report"
           style={
-            { "--employee-count": report.employees.length } as CSSProperties
+            { "--employee-count": report.employees.length, "--report-height": paper === "Letter" ? "9.42in" : "10.11in" } as CSSProperties
           }
         >
           <header>
@@ -938,61 +943,27 @@ export default function App() {
           <div className="print-summary">
             <section>
               <h2>TEAM SUMMARY</h2>
-              <p>
-                Employees <b>{report.employees.length}</b>
-              </p>
-              <p>
-                Total activity lines <b>{n(report.total)}</b>
-              </p>
-              <p>
-                PICK / PUT{" "}
-                <b>
-                  {n(report.counts.PICK)} / {n(report.counts.PUT)}
-                </b>
-              </p>
-              <p>
-                REPLN / RECEIPT{" "}
-                <b>
-                  {n(report.counts.REPLN)} / {n(report.counts.RECEIPT)}
-                </b>
-              </p>
+              <div className="print-team-grid">
+                <div>
+                  {[["Staff", report.employees.length], ["Total", report.total], ["PICK", report.counts.PICK], ["RECEIPT", report.counts.RECEIPT], ["PUT", report.counts.PUT], ["REPLN", report.counts.REPLN]].map(([label, value]) => <p key={label}><strong>{label}</strong><b>{n(Number(value))}</b></p>)}
+                </div>
+                <div><p>Date <b>{report.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$2/$3/$1")}</b></p><p>Source <b>Daily Activity</b></p></div>
+              </div>
             </section>
             <section>
               <h2>KEY HIGHLIGHTS</h2>
-              <p>
-                Most activity <b>{report.employees[0]?.employee}</b>
-              </p>
-              <p>
-                Most picks{" "}
-                <b>{bestPicker?.counts.PICK ? bestPicker.employee : "—"}</b>
-              </p>
-              <p>
-                Most receipts{" "}
-                <b>
-                  {bestReceiver?.counts.RECEIPT ? bestReceiver.employee : "—"}
-                </b>
-              </p>
-              <p>
-                Team pick rate <b>{report.rate?.toFixed(2) ?? "—"} lines/hr</b>
-              </p>
+              <p>Most Total <b>{report.employees[0]?.employee} ({n(report.employees[0]?.total ?? 0)})</b></p>
+              {(["PICK", "RECEIPT", "PUT", "REPLN"] as Activity[]).map(activity => {
+                const top = [...report.employees].sort((a, b) => b.counts[activity] - a.counts[activity] || a.rank - b.rank)[0];
+                return <p key={activity}>Most {activity === "RECEIPT" ? "Receipt" : activity}<b>{top?.counts[activity] ? `${top.employee} (${n(top.counts[activity])})` : "—"}</b></p>;
+              })}
+              <p>Team pick rate <b>{report.rate?.toFixed(2) ?? "—"} lines/hr</b></p>
             </section>
           </div>
           <EmployeeTable employees={report.employees} compact />
           <div className="print-notes">
-            <h2>NOTES</h2>
-            <p>
-              Counts are transaction rows, not Qty. Rank: Total, then PICK,
-              descending. Blank transaction types carry down.
-            </p>
-            <p>
-              Pick Time = last PICK − first PICK, including breaks. L/Hr = PICK
-              ÷ hours. Single, zero-span or incomplete timestamps leave
-              time/rate blank.
-            </p>
-            <p>
-              Excluded: {EXCLUDED_USERS.join(", ")}. Team rate uses only
-              employees with valid Pick Time.
-            </p>
+            <p>Excluded system accounts: {EXCLUDED_USERS.join(", ")}.</p>
+            <p>Pick Time = first-to-last PICK transaction, including breaks; a single PICK has no measurable time span. Counts are lines, not Qty.</p>
           </div>
         </section>
       )}

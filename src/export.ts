@@ -38,7 +38,7 @@ export function createReportWorkbook(
   const navy = "163D68",
     light = "EDF3FA",
     muted = "566780";
-  ws.columns = [6, 24, 10, 12, 10, 10, 10, 12, 11].map((width) => ({ width }));
+  ws.columns = [5, 23, 9, 11, 11, 8, 9, 11, 10].map((width) => ({ width }));
   const merged = (
     range: string,
     value: string | number | ExcelJS.CellFormulaValue,
@@ -65,82 +65,43 @@ export function createReportWorkbook(
     bold: true,
     color: { argb: "FFFFFF" },
   };
-  ws.getRow(1).height = 39;
-  merged(
-    "A2:I2",
-    `${formatDate(report.date)}  •  ${dataset.sample ? "SAMPLE DATA — " : ""}${dataset.source}  /  ${dataset.sheet}`,
-    undefined,
-    muted,
-  );
-  ws.getRow(2).height = 27;
-  ws.getRow(3).height = 9;
+  ws.getRow(1).height = 30;
+  merged("A2:I2", `All transaction types · ${dataset.sample ? "SAMPLE DATA · " : ""}${dataset.sheet} · ${formatDate(report.date)}`, navy, "FFFFFF");
+  ws.getRow(2).height = 18;
+  ws.getRow(3).height = 6;
   merged("A4:E4", "TEAM SUMMARY", navy, "FFFFFF", true);
   merged("F4:I4", "KEY HIGHLIGHTS", navy, "FFFFFF", true);
-  const start = 11,
-    end = start + report.employees.length - 1,
-    totalRow = end + 1;
-  merged("A5:C5", "Employees", light);
-  merged("D5:E5", report.employees.length, light, navy, true);
-  merged("A6:C6", "Total activity lines");
-  merged(
-    "D6:E6",
-    { formula: `SUM(I${start}:I${end})`, result: report.total },
-    undefined,
-    navy,
-    true,
-  );
-  merged("A7:C7", "PICK / PUT", light);
-  merged(
-    "D7:E7",
-    `${report.counts.PICK} / ${report.counts.PUT}`,
-    light,
-    navy,
-    true,
-  );
-  merged("A8:C8", "REPLN / RECEIPT");
-  merged(
-    "D8:E8",
-    `${report.counts.REPLN} / ${report.counts.RECEIPT}`,
-    undefined,
-    navy,
-    true,
-  );
-  const best = report.employees[0];
-  const receiver = [...report.employees].sort(
-    (a, b) => b.counts.RECEIPT - a.counts.RECEIPT,
-  )[0];
-  const picker = [...report.employees].sort(
-    (a, b) => b.counts.PICK - a.counts.PICK,
-  )[0];
-  merged(
-    "F5:I5",
-    `Most activity: ${best?.employee ?? "—"} (${best?.total ?? 0})`,
-    light,
-  );
-  merged(
-    "F6:I6",
-    `Most picks: ${picker?.counts.PICK ? `${picker.employee} (${picker.counts.PICK})` : "—"}`,
-  );
-  merged(
-    "F7:I7",
-    `Most receipts: ${receiver?.counts.RECEIPT ? `${receiver.employee} (${receiver.counts.RECEIPT})` : "—"}`,
-    light,
-  );
-  merged("F8:I8", `Team pick rate: ${report.rate?.toFixed(2) ?? "—"} lines/hr`);
-  ws.getRow(9).height = 10;
-  ws.getRow(10).values = [
-    "Rank",
-    "Employee",
-    "PICK",
-    "Pick Time",
-    "L/Hr",
-    "PUT",
-    "REPLN",
-    "RECEIPT",
-    "Total",
+  const start = 13, end = start + report.employees.length - 1, totalRow = end + 1;
+  const summary: [string, number][] = [
+    ["Staff", report.employees.length], ["Total", report.total],
+    ["PICK", report.counts.PICK], ["RECEIPT", report.counts.RECEIPT],
+    ["PUT", report.counts.PUT], ["REPLN", report.counts.REPLN],
   ];
-  ws.getRow(10).height = 26;
-  ws.getRow(10).eachCell((c) => {
+  const topActivity = (activity: "PICK" | "PUT" | "REPLN" | "RECEIPT") => {
+    const top = [...report.employees].sort((a, b) => b.counts[activity] - a.counts[activity] || a.rank - b.rank)[0];
+    return top?.counts[activity] ? `${top.employee} (${top.counts[activity]})` : "—";
+  };
+  const highlights = [
+    ["Most Total", report.employees[0] ? `${report.employees[0].employee} (${report.employees[0].total})` : "—"],
+    ["Most PICK", topActivity("PICK")], ["Most Receipt", topActivity("RECEIPT")],
+    ["Most PUT", topActivity("PUT")], ["Most REPLN", topActivity("REPLN")],
+    ["Team pick rate", `${report.rate?.toFixed(2) ?? "—"} lines/hr`],
+  ];
+  summary.forEach(([label, value], index) => {
+    const r = 5 + index;
+    merged(`A${r}:B${r}`, label, index % 2 ? light : undefined, navy, true);
+    merged(`C${r}:C${r}`, value, index % 2 ? light : undefined, navy, true);
+    if (index === 0) { merged(`D${r}:D${r}`, "Date"); merged(`E${r}:E${r}`, report.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$2/$3/$1")); }
+    if (index === 1) { merged(`D${r}:D${r}`, "Source"); merged(`E${r}:E${r}`, "Daily Activity").font = {name: "Calibri", size: 8, color: {argb: navy}}; }
+    merged(`F${r}:G${r}`, highlights[index][0]);
+    merged(`H${r}:I${r}`, highlights[index][1], undefined, navy, true);
+    ws.getRow(r).height = 17;
+  });
+  ws.getRow(4).height = 18;
+  ws.getRow(11).height = 8;
+  ws.getRow(12).values = ["Rank", "Employee", "PICK", "Pick Time", "L/Hr", "PUT", "REPLN", "RECEIPT", "Total"];
+  ws.getRow(12).height = 20;
+  ws.getRow(12).eachCell((c) => {
     c.font = {
       name: "Calibri",
       size: 10,
@@ -150,10 +111,9 @@ export function createReportWorkbook(
     c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: navy } };
     c.alignment = { horizontal: "center", vertical: "middle" };
   });
-  const rowHeight = Math.max(
-    18,
-    Math.min(46, 390 / Math.max(report.employees.length, 1)),
-  );
+  // Allocate the remaining printable height to rows, including short reports.
+  const availableHeight = (paper === "Letter" ? 11 : 11.69) * 72 - 108;
+  const rowHeight = Math.max(10, (availableHeight - 258) / Math.max(report.employees.length, 1));
   report.employees.forEach((e, index) => {
     const r = start + index;
     const row = ws.getRow(r);
@@ -175,7 +135,7 @@ export function createReportWorkbook(
     row.eachCell({ includeEmpty: true }, (cell, col) => {
       cell.font = {
         name: "Calibri",
-        size: 11,
+        size: rowHeight < 16 ? 9 : 10,
         bold: col === 2 || col === 9,
         color: { argb: "20334C" },
       };
@@ -217,7 +177,7 @@ export function createReportWorkbook(
     { formula: `SUM(H${start}:H${end})`, result: report.counts.RECEIPT },
     { formula: `SUM(I${start}:I${end})`, result: report.total },
   ];
-  total.height = 30;
+  total.height = 20;
   total.eachCell({ includeEmpty: true }, (cell, col) => {
     cell.font = {
       name: "Calibri",
@@ -232,35 +192,14 @@ export function createReportWorkbook(
     };
     cell.numFmt = col === 4 ? "[h]:mm" : col === 5 ? "0.00" : "#,##0";
   });
-  ws.getRow(totalRow + 1).height = 9;
-  merged(`A${totalRow + 2}:I${totalRow + 2}`, "NOTES", navy, "FFFFFF", true);
-  merged(
-    `A${totalRow + 3}:I${totalRow + 3}`,
-    "Counts are transaction rows, not quantities. Rank: Total, then PICK, descending. Blank transaction types carry down.",
-    undefined,
-    muted,
-  );
-  merged(
-    `A${totalRow + 4}:I${totalRow + 4}`,
-    "Pick Time = last PICK − first PICK, including breaks. Single, zero-span or incomplete timestamps leave time/rate blank. L/Hr = PICK ÷ hours.",
-    undefined,
-    muted,
-  );
-  merged(
-    `A${totalRow + 5}:I${totalRow + 5}`,
-    `Excluded: ${EXCLUDED_USERS.join(", ")}. Team rate uses only employees with valid Pick Time. ${dataset.sample ? "Synthetic sample — not actual employee results." : ""}`,
-    undefined,
-    muted,
-  );
-  [3, 4, 5].forEach((offset) => {
-    ws.getRow(totalRow + offset).height = 27;
-    ws.getCell(`A${totalRow + offset}`).font = {
-      name: "Calibri",
-      size: 9,
-      color: { argb: muted },
-    };
+  ws.getRow(totalRow + 1).height = 6;
+  merged(`A${totalRow + 2}:I${totalRow + 2}`, `Excluded system accounts: ${EXCLUDED_USERS.join(", ")}${dataset.sample ? " · Synthetic sample" : ""}`, undefined, muted);
+  merged(`A${totalRow + 3}:I${totalRow + 3}`, "Pick Time = first-to-last PICK transaction, including breaks. A single PICK has no measurable time span. Counts are lines, not Qty.", undefined, muted);
+  [2, 3].forEach(offset => {
+    ws.getRow(totalRow + offset).height = 15;
+    ws.getCell(`A${totalRow + offset}`).font = {name: "Calibri", size: 8, color: {argb: muted}};
   });
-  ws.pageSetup.printArea = `A1:I${totalRow + 5}`;
+  ws.pageSetup.printArea = `A1:I${totalRow + 3}`;
   return wb;
 }
 

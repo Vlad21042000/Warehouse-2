@@ -13,6 +13,13 @@ A browser-based Daily Activity dashboard for warehouse teams. Import an Excel or
 - Mobile layout, keyboard access, print view, synthetic sample report, and downloadable CSV header template.
 - No accounts, subscriptions, backend storage, or telemetry. Imported data remains in memory in the browser tab. Refreshing clears it. Fonts and all app dependencies are served with the site.
 
+## Shift intelligence
+
+- Compare a second Excel/CSV report or choose another date in the current file. Select comparison worksheets and dates independently. Volume differences are shown for the team and all employees, including those present in only one report; zero baselines have no percentage change.
+- Hourly activity charts and a paginated employee heatmap use source-file time. Missing timestamps are shown separately and retained in totals. Select a heatmap cell or employee to open their operation timeline and available history within the current file.
+- Search orders and items on the selected day, including time, employee, operation, Qty/UOM, locations and task/trip metadata. Optional columns may be absent; missing identifiers are reported, never inferred. Duplicate source rows stay separate.
+- Comparison imports stay in tab memory. Sample comparison data is explicitly labelled. Analytics are excluded from the one-page printed and Excel daily report.
+
 ## Input format
 
 The Daily Activity export uses these columns:

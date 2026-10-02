@@ -2294,8 +2294,8 @@ h1 {
 .warehouse-scene { display: none; }
 @media screen {
   .warehouse-scene { display: block; position: fixed; inset: 0 0 0 224px; z-index: 0; overflow: hidden; pointer-events: none; background: #151719; }
-  .warehouse-scene > svg { width: 100%; height: 100%; opacity: .42; }
-  .warehouse-scene-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #121315e8, #12131530 62%, #12131560), linear-gradient(0deg, #12131580, transparent 65%); }
+  .warehouse-photo { position: absolute; inset: -3%; width: 106%; height: 106%; object-fit: cover; object-position: 60% center; opacity: .62; animation: warehouse-camera 40s ease-in-out infinite alternate; }
+  .warehouse-scene-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #121315e8, #12131520 65%, #12131535), linear-gradient(0deg, #12131590, transparent 70%); }
   .app-shell { position: relative; z-index: 1; }
   .page-heading { min-height: 180px; }
   .panel, .stat-card, .upload-panel, .empty-panel { background: #1d1e20f2; }
@@ -2303,35 +2303,20 @@ h1 {
   .topbar-actions { display: flex; align-items: center; gap: 18px; }
   .motion-button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-raised); color: var(--text-secondary); font-size: 11px; }
   .motion-button:hover { border-color: var(--accent); color: var(--accent); }
-  .warehouse-forklift { animation: forklift-travel 32s ease-in-out infinite alternate; }
-  .warehouse-walker { animation: worker-travel 24s ease-in-out infinite alternate; }
-  .warehouse-walker-return { animation-duration: 29s; animation-delay: -12s; }
-  .worker-body { animation: worker-bob 1.2s ease-in-out infinite alternate; }
-  .worker-leg, .worker-arm { transform-box: fill-box; transform-origin: center top; animation: worker-step 1.2s ease-in-out infinite alternate; }
-  .worker-leg-right, .worker-arm-left { animation-delay: -.6s; }
-  .warehouse-picker .worker-leg, .warehouse-picker .worker-body { animation: none; }
-  .warehouse-picker .worker-arm { animation: picker-reach 5s ease-in-out infinite; }
-  .picker-box { animation: picker-lift 5s ease-in-out infinite; }
-  .forklift-beacon { animation: beacon-glow 3s ease-in-out infinite alternate; }
-  .warehouse-conveyor { animation: conveyor-travel 12s linear infinite; }
-  .is-paused *, .is-paused { animation-play-state: paused !important; }
+  .is-paused .warehouse-photo { animation-play-state: paused; }
 }
-@keyframes forklift-travel { 0%, 7% { transform: translateX(0); } 93%, 100% { transform: translateX(940px); } }
-@keyframes worker-travel { 0%, 10% { transform: translateX(0); } 90%, 100% { transform: translateX(380px); } }
-@keyframes worker-bob { from { transform: translateY(0); } to { transform: translateY(-2px); } }
-@keyframes worker-step { from { transform: rotate(-15deg); } to { transform: rotate(15deg); } }
-@keyframes picker-reach { 0%, 100% { transform: rotate(0); } 35%, 65% { transform: rotate(-45deg); } }
-@keyframes picker-lift { 0%, 100% { transform: translateY(0); } 35%, 65% { transform: translateY(-18px); } }
-@keyframes beacon-glow { from { opacity: .5; } to { opacity: 1; } }
-@keyframes conveyor-travel { from { transform: translateX(0); } to { transform: translateX(160px); } }
+@keyframes warehouse-camera {
+  from { transform: translate3d(-.8%, -.3%, 0) scale(1); }
+  to { transform: translate3d(.8%, .3%, 0) scale(1.045); }
+}
 @media screen and (max-width: 740px) {
   .warehouse-scene { left: 0; }
-  .warehouse-scene > svg { opacity: .3; }
+  .warehouse-photo { opacity: .48; object-position: 57% center; }
   .page-heading { min-height: 150px; }
   .topbar-actions { gap: 8px; }
   .motion-button span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .warehouse-scene * { animation: none !important; }
+  .warehouse-photo { animation: none !important; transform: none; }
   .motion-button { display: none; }
 }

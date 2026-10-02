@@ -33,7 +33,7 @@ import {
   type Dataset,
 } from "./report";
 import type { ImportResult } from "./import";
-import EmployeeTable from "./EmployeeTable";
+import ReportTable from "./ReportTable";
 import PrintReport from "./PrintReport";
 import PrintPreview from "./PrintPreview";
 import "./print-report.css";
@@ -706,9 +706,7 @@ export default function App() {
                       </button>
                     ))}
                   </div>
-                  <div className="table-scroll">
-                    <EmployeeTable employees={visible} onEmployee={employee => { navigate("shift-insights"); setSelectedEmployee(employee); }} />
-                  </div>
+                  <ReportTable employees={visible} onEmployee={employee => { navigate("shift-insights"); setSelectedEmployee(employee); }} />
                   {!visible.length && (
                     <div className="no-results">
                       <Search size={25} />

@@ -26,3 +26,5 @@
 .print-document .print-notes { margin-top: 6pt; }
 .print-document .print-notes p { font-size: 7pt; line-height: 1.2; margin: 3pt 0; }
 .print-document .print-table tr { break-inside: avoid; }
+
+.print-document .employee-table.print-table tbody th, .print-document .employee-table.print-table tbody td { color: #23344a; }

@@ -2146,8 +2146,8 @@ h1 {
     --chart-baseline: #e8bb68;
     --heat-rgb: 94, 234, 212;
     --heat-empty: #1a2836;
-    --heat-text: #e8f0f5;
-    --heat-strong-text: #082a29;
+    --heat-text: #ffffff;
+    --heat-strong-text: #000000;
     color: var(--text);
     background: var(--page);
   }

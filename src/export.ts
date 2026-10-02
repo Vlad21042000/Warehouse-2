@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import {
-  EXCLUDED_USERS,
+  SYSTEM_USERS,
   formatDate,
   type Dataset,
   type Report,
@@ -71,18 +71,19 @@ export function createReportWorkbook(
   ws.getRow(3).height = 6;
   merged("A4:E4", "TEAM SUMMARY", navy, "FFFFFF", true);
   merged("F4:I4", "KEY HIGHLIGHTS", navy, "FFFFFF", true);
+  const people = report.employees.filter(e => !e.isSystem);
   const start = 13, end = start + report.employees.length - 1, totalRow = end + 1;
   const summary: [string, number][] = [
-    ["Staff", report.employees.length], ["Total", report.total],
+    ["Staff", people.length], ["Total", report.total],
     ["PICK", report.counts.PICK], ["RECEIPT", report.counts.RECEIPT],
     ["PUT", report.counts.PUT], ["REPLN", report.counts.REPLN],
   ];
   const topActivity = (activity: "PICK" | "PUT" | "REPLN" | "RECEIPT") => {
-    const top = [...report.employees].sort((a, b) => b.counts[activity] - a.counts[activity] || a.rank - b.rank)[0];
+    const top = [...people].sort((a, b) => b.counts[activity] - a.counts[activity] || a.rank - b.rank)[0];
     return top?.counts[activity] ? `${top.employee} (${top.counts[activity]})` : "—";
   };
   const highlights = [
-    ["Most Total", report.employees[0] ? `${report.employees[0].employee} (${report.employees[0].total})` : "—"],
+    ["Most Total", people[0] ? `${people[0].employee} (${people[0].total})` : "—"],
     ["Most PICK", topActivity("PICK")], ["Most Receipt", topActivity("RECEIPT")],
     ["Most PUT", topActivity("PUT")], ["Most REPLN", topActivity("REPLN")],
     ["Team pick rate", `${report.rate?.toFixed(2) ?? "—"} lines/hr`],
@@ -118,8 +119,8 @@ export function createReportWorkbook(
     const r = start + index;
     const row = ws.getRow(r);
     row.values = [
-      e.rank,
-      e.employee,
+      e.isSystem ? "—" : e.rank,
+      e.isSystem ? `${e.employee} (System)` : e.employee,
       e.counts.PICK,
       e.pickMinutes === null ? null : e.pickMinutes / 1440,
       {
@@ -193,7 +194,7 @@ export function createReportWorkbook(
     cell.numFmt = col === 4 ? "[h]:mm" : col === 5 ? "0.00" : "#,##0";
   });
   ws.getRow(totalRow + 1).height = 6;
-  merged(`A${totalRow + 2}:I${totalRow + 2}`, `Excluded system accounts: ${EXCLUDED_USERS.join(", ")}${dataset.sample ? " · Synthetic sample" : ""}`, undefined, muted);
+  merged(`A${totalRow + 2}:I${totalRow + 2}`, `Systems included below employees: ${SYSTEM_USERS.join(", ")}${dataset.sample ? " · Synthetic sample" : ""}`, undefined, muted);
   merged(`A${totalRow + 3}:I${totalRow + 3}`, "Pick Time = first-to-last PICK transaction, including breaks. A single PICK has no measurable time span. Counts are lines, not Qty.", undefined, muted);
   [2, 3].forEach(offset => {
     ws.getRow(totalRow + offset).height = 15;

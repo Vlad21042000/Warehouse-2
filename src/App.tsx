@@ -11,8 +11,6 @@ import {
   LayoutDashboard,
   LoaderCircle,
   Package,
-  Pause,
-  Play,
   Printer,
   Search,
   ShieldCheck,
@@ -26,7 +24,7 @@ import {
   ACTIVITIES,
   buildReport,
   createDemo,
-  EXCLUDED_USERS,
+  SYSTEM_USERS,
   formatDate,
   formatDuration,
   HEADERS,
@@ -103,14 +101,14 @@ function EmployeeTable({
         </tr>
       </thead>
       <tbody>
-        {employees.map((e) => (
-          <tr key={e.employee} className={`rank-${e.rank}`}>
+        {employees.map((e, index) => (
+          <tr key={e.employee} className={`rank-${e.rank}${e.isSystem ? " system-account" : ""}${e.isSystem && !employees[index - 1]?.isSystem ? " system-first" : ""}`}>
             <td>
               <span className="rank-number">
                 {e.rank === 1 && !compact ? (
                   <Trophy size={14} aria-hidden="true" />
                 ) : null}
-                {e.rank}
+                {e.isSystem ? "—" : e.rank}
               </span>
             </td>
             <th scope="row">
@@ -121,6 +119,7 @@ function EmployeeTable({
                   </span>
                 )}
                 {onEmployee && !compact ? <button className="employee-link" onClick={() => onEmployee(e.employee)} aria-label={`View ${e.employee} activity`}>{e.employee}</button> : e.employee}
+                {e.isSystem && <span className="system-account-label"> (System)</span>}
               </span>
             </th>
             <td>{n(e.counts.PICK)}</td>
@@ -153,7 +152,6 @@ function EmployeeTable({
 }
 
 export default function App() {
-  const [animationPaused, setAnimationPaused] = useState(false);
   const [page, setPage] = useState<Page>(currentPage);
   const pageInfo = pages[page];
   function navigate(next: Page) {
@@ -205,11 +203,12 @@ export default function App() {
       ) ?? [],
     [report, search, activity],
   );
+  const people = report?.employees.filter(e => !e.isSystem) ?? [];
   const bestPicker = report
-    ? [...report.employees].sort((a, b) => b.counts.PICK - a.counts.PICK)[0]
+    ? [...people].sort((a, b) => b.counts.PICK - a.counts.PICK)[0]
     : null;
   const bestReceiver = report
-    ? [...report.employees].sort(
+    ? [...people].sort(
         (a, b) => b.counts.RECEIPT - a.counts.RECEIPT,
       )[0]
     : null;
@@ -370,7 +369,7 @@ export default function App() {
       <a href="#main" className="skip-link" onClick={event => { event.preventDefault(); document.getElementById("main")?.focus(); }}>
         Skip to report
       </a>
-      <WarehouseScene paused={animationPaused}/>
+      <WarehouseScene/>
       <div className="app-shell">
         <aside className="sidebar">
           <a
@@ -420,9 +419,7 @@ export default function App() {
               <strong>{pageInfo.title}</strong>
             </div>
             <div className="topbar-actions">
-            <button className="motion-button" aria-pressed={animationPaused} aria-label={animationPaused ? "Play warehouse animation" : "Pause warehouse animation"} onClick={() => setAnimationPaused(value => !value)}>
-              {animationPaused ? <Play size={15}/> : <Pause size={15}/>}<span>{animationPaused ? "Play background" : "Pause background"}</span>
-            </button>
+
             <button
               className="help-button"
               onClick={() => navigate("guide")}
@@ -626,11 +623,11 @@ export default function App() {
                       <Users size={19} />
                     </div>
                     <div className="stat-number">
-                      {n(report.employees.length)}
+                      {n(people.length)}
                       <span>people</span>
                     </div>
                     <div className="stat-description">
-                      Service accounts excluded
+                      System activity included in totals
                     </div>
                   </div>
                   <div className="stat-card">
@@ -717,9 +714,9 @@ export default function App() {
                     <div className="highlight-grid">
                       <div>
                         <span className="highlight-label">MOST ACTIVITY</span>
-                        <strong>{report.employees[0]?.employee ?? "—"}</strong>
+                        <strong>{people[0]?.employee ?? "—"}</strong>
                         <span>
-                          <b>{n(report.employees[0]?.total ?? 0)}</b> total
+                          <b>{n(people[0]?.total ?? 0)}</b> total
                           lines
                         </span>
                       </div>
@@ -760,7 +757,7 @@ export default function App() {
                           {report.employees.length}
                         </span>
                       </h2>
-                      <p>Ranked by total activity, then picking lines.</p>
+                      <p>People ranked by total activity, then picking lines; systems listed last.</p>
                     </div>
                     <label className="search-control">
                       <Search size={17} />
@@ -835,14 +832,13 @@ export default function App() {
                       <p>
                         {n(dataset.audit.included)} valid lines across{" "}
                         {dataset.dates.length} date(s).{" "}
-                        {n(dataset.audit.excluded)} excluded-account rows;{" "}
                         {n(dataset.audit.unsupported)} unsupported rows;{" "}
                         {n(dataset.audit.invalid)} invalid rows.
                       </p>
                       <p>
                         One row = one activity line, regardless of Qty. Blank
-                        transaction types carry down. Excluded:{" "}
-                        {EXCLUDED_USERS.join(", ")}.
+                        transaction types carry down. System accounts are included below employees:{" "}
+                        {SYSTEM_USERS.join(", ")}.
                       </p>
                       <p>
                         Pick Time is the elapsed time between first and last
@@ -950,7 +946,7 @@ export default function App() {
               <p>
                 Each transaction row counts as one line. PICK, PUT, REPLN and
                 RECEIPT are included. Blank transaction types inherit the type
-                above. JDEJOBS, EXACTASVC and BFITZ00 are excluded.
+                above. JDEJOBS, EXACTASVC and BFITZ00 are included at the bottom; employee rankings and highlights include people only.
               </p>
             </section>
           </div>
@@ -1019,16 +1015,16 @@ export default function App() {
               <h2>TEAM SUMMARY</h2>
               <div className="print-team-grid">
                 <div>
-                  {[["Staff", report.employees.length], ["Total", report.total], ["PICK", report.counts.PICK], ["RECEIPT", report.counts.RECEIPT], ["PUT", report.counts.PUT], ["REPLN", report.counts.REPLN]].map(([label, value]) => <p key={label}><strong>{label}</strong><b>{n(Number(value))}</b></p>)}
+                  {[["Staff", people.length], ["Total", report.total], ["PICK", report.counts.PICK], ["RECEIPT", report.counts.RECEIPT], ["PUT", report.counts.PUT], ["REPLN", report.counts.REPLN]].map(([label, value]) => <p key={label}><strong>{label}</strong><b>{n(Number(value))}</b></p>)}
                 </div>
                 <div><p>Date <b>{report.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$2/$3/$1")}</b></p><p>Source <b>Daily Activity</b></p></div>
               </div>
             </section>
             <section>
               <h2>KEY HIGHLIGHTS</h2>
-              <p>Most Total <b>{report.employees[0]?.employee} ({n(report.employees[0]?.total ?? 0)})</b></p>
+              <p>Most Total <b>{people[0] ? `${people[0].employee} (${n(people[0].total)})` : "—"}</b></p>
               {(["PICK", "RECEIPT", "PUT", "REPLN"] as Activity[]).map(activity => {
-                const top = [...report.employees].sort((a, b) => b.counts[activity] - a.counts[activity] || a.rank - b.rank)[0];
+                const top = [...people].sort((a, b) => b.counts[activity] - a.counts[activity] || a.rank - b.rank)[0];
                 return <p key={activity}>Most {activity === "RECEIPT" ? "Receipt" : activity}<b>{top?.counts[activity] ? `${top.employee} (${n(top.counts[activity])})` : "—"}</b></p>;
               })}
               <p>Team pick rate <b>{report.rate?.toFixed(2) ?? "—"} lines/hr</b></p>
@@ -1036,7 +1032,7 @@ export default function App() {
           </div>
           <EmployeeTable employees={report.employees} compact />
           <div className="print-notes">
-            <p>Excluded system accounts: {EXCLUDED_USERS.join(", ")}.</p>
+            <p>System accounts included below employees: {SYSTEM_USERS.join(", ")}.</p>
             <p>Pick Time = first-to-last PICK transaction, including breaks; a single PICK has no measurable time span. Counts are lines, not Qty.</p>
           </div>
         </section>

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { ACTIVITIES, EXCLUDED_USERS, type Dataset, type Transaction } from './report';
+import { ACTIVITIES, type Dataset, type Transaction } from './report';
 
 const env = import.meta.env ?? {};
 export const cloud = env.VITE_SUPABASE_URL && env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -37,7 +37,7 @@ export function parseSnapshot(value: unknown, date: string): CloudSnapshot {
   if (input.version !== 1 || !data || !Array.isArray(data.transactions) || !data.transactions.length || data.transactions.length > 200000 || typeof data.source !== 'string' || data.source.length > 500 || typeof data.sheet !== 'string' || data.sheet.length > 200 || typeof data.sample !== 'boolean') throw new Error('This saved report is not supported.');
   const start = Date.parse(date + 'T00:00:00Z');
   const rows: Transaction[] = data.transactions.map(raw => {
-    if (!raw || typeof raw !== 'object' || !(ACTIVITIES as readonly string[]).includes(raw.activity) || typeof raw.employee !== 'string' || !raw.employee.trim() || raw.employee.length > 200 || EXCLUDED_USERS.includes(raw.employee.toUpperCase()) || raw.date !== date || (raw.timestamp !== null && (typeof raw.timestamp !== 'number' || !Number.isFinite(raw.timestamp) || raw.timestamp < start || raw.timestamp >= start + 86400000))) throw new Error('The saved report contains invalid transactions.');
+    if (!raw || typeof raw !== 'object' || !(ACTIVITIES as readonly string[]).includes(raw.activity) || typeof raw.employee !== 'string' || !raw.employee.trim() || raw.employee.length > 200 || raw.date !== date || (raw.timestamp !== null && (typeof raw.timestamp !== 'number' || !Number.isFinite(raw.timestamp) || raw.timestamp < start || raw.timestamp >= start + 86400000))) throw new Error('The saved report contains invalid transactions.');
     const row: Transaction = { activity: raw.activity, employee: raw.employee, date, timestamp: raw.timestamp };
     for (const field of optionalFields) {
       if (raw[field] !== undefined && (typeof raw[field] !== 'string' || raw[field]!.length > 1000)) throw new Error('Invalid saved transaction details.');

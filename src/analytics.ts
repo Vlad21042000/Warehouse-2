@@ -1,4 +1,4 @@
-import { buildReport, emptyCounts, type Activity, type Dataset, type Report, type Transaction } from './report';
+import { buildReport, emptyCounts, isSystemAccount, type Activity, type Dataset, type Report, type Transaction } from './report';
 
 export function hourlyActivity(rows: Transaction[], activity: Activity | 'ALL' = 'ALL') {
   const hours = Array<number>(24).fill(0);
@@ -24,7 +24,7 @@ export function heatmapRows(rows: Transaction[], activity: Activity | 'ALL' = 'A
     if (row.timestamp === null) group.missing++;
     else group.hours[new Date(row.timestamp).getUTCHours()]++;
   }
-  return [...groups.values()].sort((a, b) => b.total - a.total || a.employee.localeCompare(b.employee));
+  return [...groups.values()].sort((a, b) => Number(isSystemAccount(a.employee)) - Number(isSystemAccount(b.employee)) || b.total - a.total || a.employee.localeCompare(b.employee));
 }
 
 export function change(current: number, previous: number) {
@@ -40,7 +40,7 @@ export function compareEmployees(current: Report, previous: Report) {
       currentCounts: now?.counts ?? emptyCounts(), previousCounts: before?.counts ?? emptyCounts(),
       ...change(now?.total ?? 0, before?.total ?? 0),
       presence: !before ? 'New in current report' : !now ? 'Only in comparison report' : 'Both reports' };
-  }).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.employee.localeCompare(b.employee));
+  }).sort((a, b) => Number(isSystemAccount(a.employee)) - Number(isSystemAccount(b.employee)) || Math.abs(b.delta) - Math.abs(a.delta) || a.employee.localeCompare(b.employee));
 }
 
 export function findTransactions(rows: Transaction[], query: string, field: 'ALL' | 'order' | 'item' = 'ALL') {

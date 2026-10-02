@@ -1,6 +1,7 @@
 export const ACTIVITIES = ["PICK", "PUT", "REPLN", "RECEIPT"] as const;
 export type Activity = (typeof ACTIVITIES)[number];
-export const EXCLUDED_USERS = ["JDEJOBS", "EXACTASVC", "BFITZ00"];
+export const SYSTEM_USERS = ["JDEJOBS", "EXACTASVC", "BFITZ00"];
+export const isSystemAccount = (name: string) => SYSTEM_USERS.includes(name.trim().toUpperCase());
 export const HEADERS = [
   "Transaction Type",
   "Task",
@@ -53,6 +54,7 @@ export type Employee = {
   pickMinutes: number | null;
   rate: number | null;
   rank: number;
+  isSystem: boolean;
 };
 export type Report = {
   date: string;
@@ -216,10 +218,6 @@ export function parseRows(
     audit.sourceRows++;
     if (raw) currentActivity = raw;
     const employee = text(row[columns.employee]).toUpperCase();
-    if (EXCLUDED_USERS.includes(employee)) {
-      audit.excluded++;
-      continue;
-    }
     if (!(ACTIVITIES as readonly string[]).includes(currentActivity)) {
       audit.unsupported++;
       continue;
@@ -286,6 +284,7 @@ export function buildReport(dataset: Dataset, date: string): Report {
     }
     return {
       employee,
+      isSystem: isSystemAccount(employee),
       counts: activityCounts,
       total: rows.length,
       pickMinutes,
@@ -294,18 +293,21 @@ export function buildReport(dataset: Dataset, date: string): Report {
     };
   }).sort(
     (a, b) =>
+      Number(a.isSystem) - Number(b.isSystem) ||
       b.total - a.total ||
       b.counts.PICK - a.counts.PICK ||
       a.employee.localeCompare(b.employee),
   );
-  employees.forEach((e, i) => {
-    e.rank = i + 1;
+  let humanRank = 0;
+  employees.forEach((e) => {
+    e.rank = e.isSystem ? 0 : ++humanRank;
   });
-  const pickMinutes = employees.reduce(
+  const people = employees.filter(e => !e.isSystem);
+  const pickMinutes = people.reduce(
     (sum, e) => sum + (e.pickMinutes ?? 0),
     0,
   );
-  const timedPicks = employees
+  const timedPicks = people
     .filter((e) => e.pickMinutes !== null)
     .reduce((sum, e) => sum + e.counts.PICK, 0);
   return {

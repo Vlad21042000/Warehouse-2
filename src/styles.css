@@ -2542,14 +2542,14 @@ h1 {
   .screen-table.pin-employee tbody th[data-column=employee] { background: var(--table-row-background); }
   .screen-table.pin-employee thead th[data-column=employee], .screen-table.pin-employee tfoot th[data-column=employee] { background: var(--surface-raised); z-index: 3; }
   .table-sort-note { padding: 14px 24px 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
-  .table-settings-dialog { width: min(500px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); color: var(--text); box-shadow: 0 24px 90px #0009; }
-  .table-settings-dialog[open] { display: flex; flex-direction: column; }
+  .table-settings-dialog { width: min(500px, calc(100vw - 28px)); height: min(880px, calc(100vh - 28px)); height: min(880px, calc(100dvh - 28px)); max-height: calc(100dvh - 28px); margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); color: var(--text); box-shadow: 0 24px 90px #0009; }
+  .table-settings-dialog[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
   .table-settings-dialog::backdrop { background: #080a0dc9; backdrop-filter: blur(5px); }
   .table-settings-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 22px 24px; border-bottom: 1px solid var(--border); }
   .table-settings-heading h2 { font-family: Manrope, sans-serif; font-size: 22px; }
   .table-settings-heading p, .table-column-options > p, .table-settings-note { font-size: 12px; color: var(--muted); line-height: 1.6; }
   .table-settings-heading p { margin-top: 8px; }
-  .table-settings-body { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 24px; }
+  .table-settings-body { min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding: 22px 24px; }
   .table-settings-body fieldset { border: 0; padding: 0; margin: 0 0 24px; }
   .table-settings-body legend { font-weight: 700; font-size: 14px; margin-bottom: 14px; }
   .table-display-options > label { display: flex; flex-direction: column; gap: 8px; color: var(--text-secondary); font-size: 12px; }
@@ -2568,5 +2568,23 @@ h1 {
   .table-custom-toolbar > .button { padding: 9px 12px; font-size: 11px; }
   .table-settings-heading, .table-settings-body, .table-settings-footer { padding-left: 18px; padding-right: 18px; }
   .table-settings-heading h2 { font-size: 20px; }
+}
+@media screen and (max-width: 740px) {
+  .table-settings-dialog { width: calc(100vw - 20px); height: calc(100vh - 20px); height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 20px); border-radius: 14px; }
+  .table-settings-heading { align-items: start; padding: 16px 18px; }
+  .table-settings-heading > div { min-width: 0; }
+  .table-settings-heading h2 { font-size: 20px; line-height: 1.3; }
+  .table-settings-heading p { font-size: 12px; }
+  .table-settings-heading .icon-button { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; }
+  .table-settings-body { padding: 18px; }
+  .table-display-options select { font-size: 16px; min-height: 46px; width: 100%; }
+  .table-display-options .table-setting-check { font-size: 13px; gap: 10px; }
+  .table-settings-body input[type=checkbox] { width: 20px; height: 20px; }
+  .table-column-row { min-height: 56px; padding: 6px 0; }
+  .table-column-row label { font-size: 14px; min-height: 44px; }
+  .table-column-row .topbar-icon { width: 44px; height: 44px; }
+  .table-settings-footer { align-items: center; padding: 12px 18px; }
+  .table-settings-footer .text-button, .table-settings-footer .button { min-height: 44px; }
+  .table-settings-footer .button { padding: 12px 24px; }
 }
 @media print { .table-settings-dialog, .table-settings-dialog::backdrop { display: none !important; } }

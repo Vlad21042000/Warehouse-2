@@ -49,7 +49,6 @@ begin
       or t ->> 'activity' not in ('PICK','PUT','RECEIPT','REPLN')
       or jsonb_typeof(t -> 'employee') is distinct from 'string'
       or length(trim(t ->> 'employee')) not between 1 and 200
-      or upper(t ->> 'employee') in ('JDEJOBS','EXACTASVC','BFITZ00')
       or t ->> 'date' is distinct from report_day::text or not (t ? 'timestamp') then return false; end if;
     if t -> 'timestamp' <> 'null'::jsonb then
       if jsonb_typeof(t -> 'timestamp') is distinct from 'number' then return false; end if;

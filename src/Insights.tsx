@@ -25,7 +25,7 @@ function HourChart({ current, baseline }: { current: number[]; baseline?: number
   return <><div className="hour-chart" role="img" aria-label="Activity lines by hour. Current report in blue, comparison in gold. Exact counts follow below."><svg viewBox="0 0 840 180" aria-hidden="true">{[0, 0.5, 1].map(fraction => <g key={fraction}><line x1="36" x2="838" y1={145 - fraction * 120} y2={145 - fraction * 120} stroke="#e7edf5"/><text x="2" y={149 - fraction * 120} fill="#718096" fontSize="10">{Number((max * fraction).toFixed(1))}</text></g>)}{current.map((value, hour) => <g key={hour}><rect x={40 + hour * 33} y={145 - value / max * 120} width={baseline ? 11 : 22} height={value / max * 120} rx="2" fill="#245f96"/>{baseline && <rect x={53 + hour * 33} y={145 - baseline[hour] / max * 120} width="11" height={baseline[hour] / max * 120} rx="2" fill="#cbaa64"/>}<text x={44 + hour * 33} y="165" fontSize="10" fill="#718096">{String(hour).padStart(2, '0')}</text></g>)}</svg></div><details className="analytics-details"><summary>Exact hourly counts</summary><div className="analytics-scroll"><table className="analytics-table"><thead><tr><th>Report</th>{hours.map(hour => <th key={hour}>{hourLabel(hour)}</th>)}</tr></thead><tbody><tr><th>Current</th>{current.map((value, hour) => <td key={hour}>{n(value)}</td>)}</tr>{baseline && <tr><th>Comparison</th>{baseline.map((value, hour) => <td key={hour}>{n(value)}</td>)}</tr>}</tbody></table></div></details></>;
 }
 
-export default function Insights({ dataset, report, selectedEmployee, onEmployee }: { dataset: Dataset; report: Report; selectedEmployee: string | null; onEmployee: (employee: string | null) => void }) {
+export default function Insights({ dataset, report, savedComparison, selectedEmployee, onEmployee }: { dataset: Dataset; report: Report; savedComparison?: { dataset: Dataset; date: string } | null; selectedEmployee: string | null; onEmployee: (employee: string | null) => void }) {
   const [comparison, setComparison] = useState<Dataset | null>(() => dataset.sample ? demoComparison(dataset) : null);
   const [comparisonImport, setComparisonImport] = useState<ImportResult | null>(null);
   const [comparisonDate, setComparisonDate] = useState('');
@@ -71,6 +71,13 @@ export default function Insights({ dataset, report, selectedEmployee, onEmployee
     for (const row of dataset.transactions) if (row.employee === selectedEmployee) totals.set(row.date, (totals.get(row.date) ?? 0) + 1);
     return [...totals.entries()].sort(([a], [b]) => b.localeCompare(a));
   }, [dataset, selectedEmployee]);
+
+  useEffect(() => {
+    if (!savedComparison) return;
+    setComparison(savedComparison.dataset); setComparisonDate(savedComparison.date);
+    setComparisonImport(null); setComparisonSheet(savedComparison.dataset.sheet);
+    setImportError(''); setEmployeeComparisonPage(0);
+  }, [savedComparison]);
 
   useEffect(() => () => { workerRef.current?.terminate(); clearTimeout(timeoutRef.current); }, []);
   useEffect(() => {

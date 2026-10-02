@@ -2097,3 +2097,30 @@ h1 {
   .analytics-title h2 { font-size: 21px; }
 }
 @media print { .employee-dialog, .shift-insights { display: none !important; } }
+
+.account-panel { padding: 24px; margin: 22px 0; scroll-margin-top: 20px; }
+.account-panel h2 { display: flex; align-items: center; gap: 8px; font-size: 18px; color: #294c72; margin: 7px 0; }
+.cloud-notice { display: flex; align-items: start; gap: 9px; background: #f1f6fb; padding: 13px; border-radius: 8px; color: #6781a0; font-size: 11px; line-height: 1.7; margin-bottom: 18px; }
+.cloud-notice svg { flex-shrink: 0; margin-top: 2px; }
+.account-form { display: grid; gap: 16px; max-width: 450px; }
+.account-form label, .owner-summary label { display: grid; gap: 7px; color: #6d83a0; font-size: 12px; }
+.account-form input:not([type=checkbox]), .owner-summary select { min-height: 40px; border: 1px solid #dce6f0; border-radius: 7px; padding: 9px 12px; font: inherit; color: #294c72; background: white; }
+.account-form small { font-size: 10px; }
+.account-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.account-tabs button { background: white; border: 1px solid #dce6f0; border-radius: 7px; padding: 9px 12px; color: #6d83a0; cursor: pointer; font-size: 11px; }
+.account-tabs button[aria-pressed=true] { background: #163d68; color: white; }
+.account-form .consent-checkbox { display: flex; align-items: start; line-height: 1.7; }
+.consent-checkbox input { margin-top: 4px; accent-color: #163d68; }
+.account-identity { display: flex; gap: 10px; align-items: center; color: #385b80; font-size: 12px; overflow-wrap: anywhere; }
+.history-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 12px; flex-wrap: wrap; }
+.history-toolbar > div, .history-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.history-toolbar h3 { color: #2c517a; font-size: 15px; }
+.history-table small { display: block; color: #9ba9ba; font-size: 10px; font-weight: 400; max-width: 250px; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+.history-table { margin-top: 18px; }
+.history-table input { accent-color: #163d68; }
+.history-actions button { border: 1px solid #dce6f0; color: #55749a; border-radius: 5px; background: white; padding: 5px 8px; cursor: pointer; font-size: 10px; }
+.owner-summary { border: 1px solid #dfe9f4; border-radius: 9px; padding: 16px; margin: 16px 0; background: #f7fafe; }
+.owner-summary strong { color: #2c517a; font-size: 20px; }
+.owner-summary p { color: #7d92ac; font-size: 11px; line-height: 1.7; margin: 9px 0 16px; }
+@media (max-width: 760px) { .account-panel { padding: 18px 14px; } .account-identity { flex-wrap: wrap; } }
+@media print { .account-panel { display: none !important; } }

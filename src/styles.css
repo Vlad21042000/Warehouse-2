@@ -2265,3 +2265,26 @@ h1 {
   .heat-legend i { background: linear-gradient(to right, var(--heat-empty), var(--chart-current)); }
   .owner-summary { border-color: var(--border); }
 }
+
+/* Page containers stay mounted to preserve report, comparison and account state. */
+[hidden] { display: none !important; }
+.mobile-navigation { display: none; }
+.guide-page { padding: 28px; max-width: 850px; }
+.import-page-note { margin-top: 20px; padding: 24px; }
+.import-page-note h2 { font-size: 18px; margin-bottom: 10px; }
+.import-page-note p { color: var(--muted); line-height: 1.8; font-size: 14px; margin-bottom: 12px; }
+.insights-date { width: fit-content; margin-bottom: 20px; }
+.account-panel { margin-top: 0; }
+.shift-insights { margin-top: 0; }
+@media screen {
+  .mobile-brand { color: var(--text); }
+  .mobile-brand svg { color: var(--accent); }
+  .guide-page { color: var(--text-secondary); }
+}
+@media screen and (max-width: 740px) {
+  .mobile-navigation { display: flex; flex-wrap: wrap; gap: 7px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .mobile-navigation a { padding: 9px 11px; border: 1px solid var(--border); border-radius: 7px; color: var(--text-secondary); font-size: 12px; }
+  .mobile-navigation a[aria-current=page] { color: var(--accent); background: var(--accent-soft); border-color: #397b73; }
+  .guide-page, .import-page-note { padding: 20px; }
+  .heading-actions { flex-wrap: wrap; }
+}

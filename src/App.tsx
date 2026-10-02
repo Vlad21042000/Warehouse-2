@@ -36,6 +36,7 @@ import {
 import type { ImportResult } from "./import";
 import Insights from "./Insights";
 import AccountHistory from "./AccountHistory";
+import { cloud } from "./cloud";
 
 const n = (value: number) => value.toLocaleString("en-CA");
 const activityNames: Record<Activity, string> = {
@@ -45,6 +46,18 @@ const activityNames: Record<Activity, string> = {
   RECEIPT: "Receiving",
 };
 const initialData = createDemo();
+const pages = {
+  overview: { title: "Daily activity", eyebrow: "OPERATIONS OVERVIEW", description: "A clear view of your team’s warehouse performance." },
+  "account-history": { title: "Account & history", eyebrow: "YOUR WORKSPACE", description: "Save daily reports, manage your account and compare saved days." },
+  "shift-insights": { title: "Shift intelligence", eyebrow: "EXPLORE YOUR SHIFT", description: "Compare reports, explore hourly activity and trace orders." },
+  import: { title: "Import report", eyebrow: "DAILY ACTIVITY IMPORT", description: "Upload an Excel or CSV export to create your daily report." },
+  guide: { title: "Report guide", eyebrow: "GETTING STARTED", description: "Learn how to import, review and print your reports." },
+};
+type Page = keyof typeof pages;
+function currentPage(): Page {
+  const hash = window.location.hash.slice(1);
+  return Object.hasOwn(pages, hash) ? hash as Page : "overview";
+}
 
 function EmployeeTable({
   employees,
@@ -137,6 +150,28 @@ function EmployeeTable({
 }
 
 export default function App() {
+  const [page, setPage] = useState<Page>(currentPage);
+  const pageInfo = pages[page];
+  function navigate(next: Page) {
+    if (window.location.hash === `#${next}`) setPage(next);
+    else window.location.hash = next;
+  }
+  useEffect(() => {
+    const onNavigation = () => { setPage(currentPage()); };
+    window.addEventListener("hashchange", onNavigation);
+    return () => window.removeEventListener("hashchange", onNavigation);
+  }, []);
+  useEffect(() => {
+    document.title = `${pages[page].title} · Warehouse Reporting`;
+    window.scrollTo({ top: 0, behavior: "instant" });
+    document.getElementById("main")?.focus({ preventScroll: true });
+  }, [page]);
+  useEffect(() => {
+    const subscription = cloud?.auth.onAuthStateChange(event => {
+      if (event === "PASSWORD_RECOVERY") { window.location.hash = "account-history"; setPage("account-history"); }
+    }).data.subscription;
+    return () => subscription?.unsubscribe();
+  }, []);
   const [savedComparison, setSavedComparison] = useState<{ dataset: Dataset; date: string } | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
   const [reportSession, setReportSession] = useState(0);
@@ -153,8 +188,6 @@ export default function App() {
   const [activity, setActivity] = useState<Activity | "ALL">("ALL");
   const [paper, setPaper] = useState<"Letter" | "A4">("Letter");
   const input = useRef<HTMLInputElement>(null);
-  const guide = useRef<HTMLDialogElement>(null);
-  const importSection = useRef<HTMLDivElement>(null);
   const report = useMemo(
     () => (dataset ? buildReport(dataset, date) : null),
     [dataset, date],
@@ -269,7 +302,8 @@ export default function App() {
       }
       if (!accepted) throw lastError;
       setImported(result);
-      setNotice(`${file.name} is ready. Review your report below.`);
+      setNotice(`${file.name} is ready.`);
+      navigate("overview");
     } catch (e) {
       setError(
         e instanceof Error
@@ -308,20 +342,14 @@ export default function App() {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  function openUpload() {
-    importSection.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-    input.current?.click();
-  }
+  function openUpload() { navigate("import"); }
   const clearAccountData = useCallback(() => {
     setSelectedEmployee(null); setSavedComparison(null); setDataset(null);
     setImported(null); setSearch(""); setError(""); setNotice("");
     setReportSession(session => session + 1);
   }, []);
   function openSavedReport(data: Dataset, selectedDate: string) {
-    activate(data); setDate(selectedDate); setImported(null); setSheet(data.sheet);
+    activate(data); setDate(selectedDate); setImported(null); setSheet(data.sheet); navigate("overview");
   }
   function clearReport() {
     setSelectedEmployee(null);
@@ -335,14 +363,14 @@ export default function App() {
 
   return (
     <>
-      <a href="#main" className="skip-link">
+      <a href="#main" className="skip-link" onClick={event => { event.preventDefault(); document.getElementById("main")?.focus(); }}>
         Skip to report
       </a>
       <div className="app-shell">
         <aside className="sidebar">
           <a
             className="brand"
-            href="#main"
+            href="#overview"
             aria-label="Warehouse Reporting home"
           >
             <span className="brand-mark">
@@ -354,23 +382,10 @@ export default function App() {
           </a>
           <div className="nav-label">WORKSPACE</div>
           <nav aria-label="Main navigation">
-            <a href="#main" className="nav-item active" aria-current="page">
-              <LayoutDashboard size={19} />
-              Overview
-            </a>
-            <a href="#account-history" className="nav-item"><Users size={19}/>Account & history</a>
-            <a href="#shift-insights" className="nav-item"><BarChart3 size={19}/>Shift intelligence</a>
-            <button className="nav-item" onClick={openUpload}>
-              <Upload size={19} />
-              Import report
-            </button>
-            <button
-              className="nav-item"
-              onClick={() => guide.current?.showModal()}
-            >
-              <CircleHelp size={19} />
-              Report guide
-            </button>
+            {(Object.keys(pages) as Page[]).map(destination => {
+              const Icon = { overview: LayoutDashboard, "account-history": Users, "shift-insights": BarChart3, import: Upload, guide: CircleHelp }[destination];
+              return <a key={destination} href={`#${destination}`} className={`nav-item ${page === destination ? "active" : ""}`} aria-current={page === destination ? "page" : undefined}><Icon size={19}/>{destination === "overview" ? "Overview" : pages[destination].title}</a>;
+            })}
           </nav>
           <div className="sidebar-bottom">
             <ShieldCheck size={24} />
@@ -397,24 +412,28 @@ export default function App() {
             <div className="breadcrumb">
               <span>Workspace</span>
               <span>/</span>
-              <strong>Daily activity</strong>
+              <strong>{pageInfo.title}</strong>
             </div>
             <button
               className="help-button"
-              onClick={() => guide.current?.showModal()}
+              onClick={() => navigate("guide")}
             >
               <CircleHelp size={17} />
               <span>How it works</span>
             </button>
           </header>
-          <main id="main">
+          <nav className="mobile-navigation" aria-label="Mobile navigation">
+            {(Object.keys(pages) as Page[]).map(destination => <a key={destination} href={`#${destination}`} aria-current={page === destination ? "page" : undefined}>{destination === "overview" ? "Overview" : pages[destination].title}</a>)}
+          </nav>
+          <main id="main" tabIndex={-1}>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">OPERATIONS OVERVIEW</div>
-                <h1>Daily activity</h1>
-                <p>A clear view of your team’s warehouse performance.</p>
+                <div className="eyebrow">{pageInfo.eyebrow}</div>
+                <h1>{pageInfo.title}</h1>
+                <p>{pageInfo.description}</p>
               </div>
-              <div className="heading-actions">
+              <div className="heading-actions" hidden={page !== "overview"}>
+                <button className="button secondary" onClick={openUpload}><Upload size={17}/>Import report</button>
                 <button
                   className="button secondary"
                   disabled={!report?.total || busy}
@@ -438,9 +457,9 @@ export default function App() {
               </div>
             </div>
 
+            <section hidden={page !== "import"} aria-label="Import a daily report">
             <div
               className={`upload-panel ${drag ? "dragging" : ""}`}
-              ref={importSection}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDrag(true);
@@ -489,6 +508,8 @@ export default function App() {
                 className="file-input"
               />
             </div>
+            <div className="panel import-page-note"><h2>Supported files</h2><p>Daily Activity exports in XLSX, XLS or CSV format, up to 20 MB. Keep the column headers; choose the worksheet and date on the Overview page after importing.</p><button className="text-button" onClick={downloadTemplate}>Download CSV template</button></div>
+            </section>
             {error && (
               <div role="alert" className="message error">
                 <span>{error}</span>
@@ -510,7 +531,10 @@ export default function App() {
               </div>
             )}
 
-            <AccountHistory dataset={dataset} date={date} onOpen={openSavedReport} onCompare={(dataset, date) => setSavedComparison({ dataset, date })} onSignOut={clearAccountData} />
+            <div hidden={page !== "account-history"}>
+              <AccountHistory dataset={dataset} date={date} onOpen={openSavedReport} onCompare={(dataset, date) => { setSavedComparison({ dataset, date }); navigate("shift-insights"); }} onSignOut={clearAccountData} />
+            </div>
+            <div hidden={page !== "overview"}>
             {dataset && report ? (
               <>
                 <div className="report-toolbar">
@@ -756,7 +780,7 @@ export default function App() {
                     ))}
                   </div>
                   <div className="table-scroll">
-                    <EmployeeTable employees={visible} onEmployee={setSelectedEmployee} />
+                    <EmployeeTable employees={visible} onEmployee={employee => { navigate("shift-insights"); setSelectedEmployee(employee); }} />
                   </div>
                   {!visible.length && (
                     <div className="no-results">
@@ -790,7 +814,6 @@ export default function App() {
                     </span>
                   </div>
                 </section>
-                <Insights key={reportSession} dataset={dataset} report={report} savedComparison={savedComparison} selectedEmployee={selectedEmployee} onEmployee={setSelectedEmployee} />
                 <div className="below-report">
                   <details className="import-details">
                     <summary>Report details & calculation notes</summary>
@@ -884,35 +907,20 @@ export default function App() {
                 </button>
               </section>
             )}
-            <footer className="page-footer">
-              <span>Warehouse Reporting</span>
-              <span>
-                <ShieldCheck size={14} />
-                Unsaved files stay in this tab. Cloud saving is optional.
-              </span>
-            </footer>
-          </main>
-        </div>
-      </div>
-      <dialog
-        ref={guide}
-        className="guide-dialog"
-        onClick={(e) => {
-          if (e.target === guide.current) guide.current?.close();
-        }}
-      >
+            </div>
+            <div hidden={page !== "shift-insights"}>
+              {dataset && report ? <>
+                <label className="date-control insights-date">Report date<select aria-label="Analysis report date" value={date} onChange={event => { setDate(event.target.value); setSelectedEmployee(null); }}>{dataset.dates.map(day => <option key={day} value={day}>{formatDate(day)}</option>)}</select></label>
+                <Insights key={reportSession} dataset={dataset} report={report} savedComparison={savedComparison} selectedEmployee={page === "shift-insights" ? selectedEmployee : null} onEmployee={setSelectedEmployee} />
+              </> : <section className="empty-panel"><FileSpreadsheet size={44}/><h2>Import a report to explore your shift</h2><p>Hourly activity, comparisons and order lookup will appear here.</p><button className="button primary" onClick={openUpload}>Import report</button></section>}
+            </div>
+            <section className="panel guide-page" hidden={page !== "guide"} aria-label="Report instructions">
         <div className="dialog-heading">
           <div>
             <span className="eyebrow">REPORT GUIDE</span>
             <h2>From raw activity to a clear report</h2>
           </div>
-          <button
-            className="icon-button"
-            aria-label="Close report guide"
-            onClick={() => guide.current?.close()}
-          >
-            <X />
-          </button>
+
         </div>
         <div className="guide-steps">
           <div>
@@ -970,7 +978,17 @@ export default function App() {
             CSV template
           </button>
         </div>
-      </dialog>
+            </section>
+            <footer className="page-footer">
+              <span>Warehouse Reporting</span>
+              <span>
+                <ShieldCheck size={14} />
+                Unsaved files stay in this tab. Cloud saving is optional.
+              </span>
+            </footer>
+          </main>
+        </div>
+      </div>
       {dataset && report && (
         <section
           id="print-report"

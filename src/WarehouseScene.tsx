@@ -20,7 +20,7 @@ export default function WarehouseScene({ paused }: { paused: boolean }) {
 
   return <div className={`warehouse-scene ${paused || inactive ? 'is-paused' : ''}`} aria-hidden="true">
     <div className="warehouse-stage">
-      <img className="warehouse-photo" src={warehouseAisle} alt="" width="2048" height="683" decoding="async"/>
+      <img className="warehouse-photo" src={warehouseAisle} alt="" width="2172" height="724" decoding="async"/>
       <div className="warehouse-worker-route worker-far">
         <div className="warehouse-worker-facing">
           <div className="warehouse-worker-sprite" style={{ backgroundImage: `url(${workerWalk})` }}/>

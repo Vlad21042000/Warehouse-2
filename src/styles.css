@@ -2301,7 +2301,7 @@ h1 {
   .warehouse-worker-route { position: absolute; width: 112px; height: 150px; filter: brightness(.8) drop-shadow(1px 5px 3px #0005); will-change: left; }
   .warehouse-worker-sprite { width: 100%; height: 100%; background-size: 400% 100%; background-repeat: no-repeat; animation: warehouse-walk-cycle 1.1s step-end infinite; }
   .warehouse-worker-facing { width: 100%; height: 100%; transform: scaleX(-1); }
-  .worker-far { top: 132px; width: 86px; height: 115px; animation: warehouse-worker-return 25s linear infinite; animation-delay: -8s; }
+  .worker-far { top: 184px; width: 86px; height: 115px; animation: warehouse-worker-return 25s linear infinite; animation-delay: -8s; }
   .worker-far .warehouse-worker-sprite { animation-duration: .95s; }
   .worker-near { top: 203px; animation: warehouse-worker-cross 31s linear infinite; animation-delay: -14s; }
   .warehouse-forklift-route { position: absolute; top: 116px; width: 216px; height: 288px; filter: brightness(.83) drop-shadow(2px 6px 4px #0006); animation: warehouse-forklift-work 30s ease-in-out infinite; animation-delay: -6s; will-change: left; }

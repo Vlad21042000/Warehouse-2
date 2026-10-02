@@ -1,4 +1,4 @@
-# Warehouse Reporting
+# VS Warehouse Reporting
 
 A browser-based Daily Activity dashboard for warehouse teams. Import an Excel or CSV export, review the team summary and ranked employee activity, then download a one-sheet Excel report or print it.
 

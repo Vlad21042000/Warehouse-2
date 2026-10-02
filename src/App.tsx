@@ -11,6 +11,8 @@ import {
   LayoutDashboard,
   LoaderCircle,
   Package,
+  Pause,
+  Play,
   Printer,
   Search,
   ShieldCheck,
@@ -37,6 +39,7 @@ import type { ImportResult } from "./import";
 import Insights from "./Insights";
 import AccountHistory from "./AccountHistory";
 import { cloud } from "./cloud";
+import WarehouseScene from "./WarehouseScene";
 
 const n = (value: number) => value.toLocaleString("en-CA");
 const activityNames: Record<Activity, string> = {
@@ -150,6 +153,7 @@ function EmployeeTable({
 }
 
 export default function App() {
+  const [animationPaused, setAnimationPaused] = useState(false);
   const [page, setPage] = useState<Page>(currentPage);
   const pageInfo = pages[page];
   function navigate(next: Page) {
@@ -366,6 +370,7 @@ export default function App() {
       <a href="#main" className="skip-link" onClick={event => { event.preventDefault(); document.getElementById("main")?.focus(); }}>
         Skip to report
       </a>
+      <WarehouseScene paused={animationPaused}/>
       <div className="app-shell">
         <aside className="sidebar">
           <a
@@ -414,6 +419,10 @@ export default function App() {
               <span>/</span>
               <strong>{pageInfo.title}</strong>
             </div>
+            <div className="topbar-actions">
+            <button className="motion-button" aria-pressed={animationPaused} aria-label={animationPaused ? "Play warehouse animation" : "Pause warehouse animation"} onClick={() => setAnimationPaused(value => !value)}>
+              {animationPaused ? <Play size={15}/> : <Pause size={15}/>}<span>{animationPaused ? "Play background" : "Pause background"}</span>
+            </button>
             <button
               className="help-button"
               onClick={() => navigate("guide")}
@@ -421,6 +430,7 @@ export default function App() {
               <CircleHelp size={17} />
               <span>How it works</span>
             </button>
+            </div>
           </header>
           <nav className="mobile-navigation" aria-label="Mobile navigation">
             {(Object.keys(pages) as Page[]).map(destination => <a key={destination} href={`#${destination}`} aria-current={page === destination ? "page" : undefined}>{destination === "overview" ? "Overview" : pages[destination].title}</a>)}

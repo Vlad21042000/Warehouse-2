@@ -3,13 +3,14 @@ import type { User } from '@supabase/supabase-js';
 import { Archive, Cloud, LogOut, ShieldCheck, UserRound, X } from 'lucide-react';
 import { cloud, CLOUD_TABLE, parseSnapshot, snapshotFingerprint, snapshotForDay, type SavedReport } from './cloud';
 import { formatDate, type Dataset } from './report';
+import ReportCards from './ReportCards';
 
 const columns = 'id,user_id,title,report_date,source,created_at,archived_at,total_lines,pick_lines,put_lines,receipt_lines,repln_lines';
 type Profile = { user_id: string; email: string; created_at: string; verified_at: string | null; last_sign_in_at: string | null };
 type Mode = 'login' | 'signup' | 'reset' | 'password';
 const errorText = (error: unknown) => error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : 'The cloud request did not finish. Try again.';
 
-export default function AccountHistory({ dataset, date, onOpen, onCompare, onSignOut, active }: { active: boolean; dataset: Dataset | null; date: string; onOpen: (dataset: Dataset, date: string) => void; onCompare: (dataset: Dataset, date: string) => void; onSignOut: () => void }) {
+export default function AccountHistory({ dataset, date, onOpen, onCompare, onSignOut, active, onUserChange, authRequest }: { onUserChange: (user: User | null) => void; authRequest: { id: number; mode: 'signup' | 'login' } | null; active: boolean; dataset: Dataset | null; date: string; onOpen: (dataset: Dataset, date: string) => void; onCompare: (dataset: Dataset, date: string) => void; onSignOut: () => void }) {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(!cloud);
   const [mode, setMode] = useState<Mode>('signup');
@@ -39,14 +40,14 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
       previousUser.current = nextUser;
       setRefresh(value => value + 1);
       setReports([]); setProfiles([]); setSelected([]); setCount(0); setUserCount(0); setPage(0);
-      setUser(session?.user ?? null); setAuthReady(true);
+      setUser(session?.user ?? null); onUserChange(session?.user ?? null); setAuthReady(true);
       if (event === 'PASSWORD_RECOVERY') { setAuthOpen(true); setMode('password'); setMessage('Choose a new password below.'); }
       if (event === 'SIGNED_OUT') { setAdmin(false); setAdminUser(''); setPassword(''); onSignOut(); }
     });
     const initialGeneration = generation.current;
-    void cloud.auth.getUser().then(({ data }) => { if (active && generation.current === initialGeneration) { previousUser.current = data.user?.id ?? null; setUser(data.user); setAuthReady(true); } }).catch(() => { if (active) setAuthReady(true); });
+    void cloud.auth.getUser().then(({ data }) => { if (active && generation.current === initialGeneration) { previousUser.current = data.user?.id ?? null; setUser(data.user); onUserChange(data.user); setAuthReady(true); } }).catch(() => { if (active) setAuthReady(true); });
     return () => { active = false; subscription.unsubscribe(); generation.current++; };
-  }, [onSignOut]);
+  }, [onSignOut, onUserChange]);
 
   useEffect(() => {
     if (!cloud || !user) return;
@@ -100,6 +101,17 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
 
   function openAuth(nextMode: Mode) {
     setMode(nextMode); setError(''); setMessage(''); setPassword(''); setAuthOpen(true);
+  }
+
+  useEffect(() => {
+    if (authRequest) openAuth(authRequest.mode);
+  }, [authRequest]);
+
+  async function archiveReport(id: string) {
+    if (!cloud) return;
+    const result = await cloud.from(CLOUD_TABLE).update({ archived_at: archive ? null : new Date().toISOString() }).eq('id', id).select('id').single();
+    if (result.error) throw result.error;
+    setSelected([]); setPage(0); setRefresh(value => value + 1); setMessage(archive ? 'Report restored.' : 'Report archived. You can restore it from Archive.');
   }
 
   async function authenticate(event: FormEvent) {
@@ -177,7 +189,7 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
       {ownerView && <div className="owner-summary"><strong>{userCount.toLocaleString()} registered users</strong><p>All account registrations, including unconfirmed emails. {profiles.length} most recent users shown.</p><label>Filter reports by user<select aria-label="Owner user filter" value={adminUser} onChange={event => { setAdminUser(event.target.value); setPage(0); }}><option value="">All users</option>{profiles.map(profile => <option key={profile.user_id} value={profile.user_id}>{profile.email}</option>)}</select></label><details className="analytics-details"><summary>Registered users</summary><div className="analytics-scroll"><table className="analytics-table"><thead><tr><th>Email</th><th>Registered</th><th>Verified</th><th>Last sign-in</th></tr></thead><tbody>{profiles.map(profile => <tr key={profile.user_id}><td>{profile.email}</td><td>{new Date(profile.created_at).toLocaleDateString()}</td><td>{profile.verified_at ? 'Yes' : 'Pending'}</td><td>{profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString() : '—'}</td></tr>)}</tbody></table></div></details></div>}
       <p className="analytics-caption">{count.toLocaleString()} {archive ? 'archived' : 'saved'} reports. Select two to compare. Archived reports can be restored.</p>
       <button className="button secondary" disabled={busy || selected.length !== 2} onClick={() => void action(compareSelected)}>Compare selected reports ({selected.length}/2)</button>
-      {loading ? <p role="status">Loading report history…</p> : <div className="analytics-scroll"><table className="analytics-table history-table"><thead><tr><th>Select</th><th>Report</th><th>Date</th><th>Total</th><th>PICK</th><th>RECEIPT</th><th>PUT</th><th>REPLN</th><th>Actions</th></tr></thead><tbody>{reports.map(report => <tr key={report.id}><td><input type="checkbox" aria-label={`Select ${report.title}`} checked={selected.includes(report.id)} disabled={!selected.includes(report.id) && selected.length >= 2} onChange={() => setSelected(value => value.includes(report.id) ? value.filter(id => id !== report.id) : [...value, report.id])}/></td><th scope="row">{report.title}<small>{report.source}{ownerView && ` · ${profiles.find(profile => profile.user_id === report.user_id)?.email ?? report.user_id}`}</small></th><td>{formatDate(report.report_date)}</td>{[report.total_lines, report.pick_lines, report.receipt_lines, report.put_lines, report.repln_lines].map((value, index) => <td key={index}>{value.toLocaleString()}</td>)}<td><div className="history-actions"><button disabled={busy} onClick={() => void action(() => open(report.id))}>Open</button><button disabled={busy || !dataset} onClick={() => void action(() => open(report.id, true))}>Compare with current</button>{report.user_id === user.id && <button disabled={busy} onClick={() => void action(async () => { const result = await cloud!.from(CLOUD_TABLE).update({ archived_at: archive ? null : new Date().toISOString() }).eq('id', report.id).select('id').single(); if (result.error) throw result.error; setSelected([]); setPage(0); setRefresh(value => value + 1); setMessage(archive ? 'Report restored.' : 'Report archived. You can restore it from Archive.'); })}>{archive ? 'Restore' : 'Archive'}</button>}</div></td></tr>)}</tbody></table></div>}
+      {loading ? <p role="status">Loading report history…</p> : <ReportCards reports={reports} selected={selected} busy={busy} canCompare={!!dataset} userId={user.id} archived={archive} ownerView={ownerView} emails={new Map(profiles.map(profile => [profile.user_id, profile.email]))} onSelect={id => setSelected(value => value.includes(id) ? value.filter(item => item !== id) : value.length < 2 ? [...value, id] : value)} onOpen={id => void action(() => open(id))} onCompare={id => void action(() => open(id, true))} onArchive={id => void action(() => archiveReport(id))}/>}
       {!loading && !reports.length && <p className="analytics-empty">{archive ? 'Your archive is empty.' : 'No saved reports yet. Save a selected day above.'}</p>}
       <div className="analytics-pager"><span>Page {page + 1} of {Math.max(1, Math.ceil(count / 25))}</span><div><button disabled={loading || page === 0} onClick={() => setPage(value => value - 1)}>Previous</button><button disabled={loading || (page + 1) * 25 >= count} onClick={() => setPage(value => value + 1)}>Next</button></div></div>
     </>}

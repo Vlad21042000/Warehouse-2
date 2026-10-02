@@ -38,6 +38,8 @@ import Insights from "./Insights";
 import AccountHistory from "./AccountHistory";
 import { cloud } from "./cloud";
 import WarehouseScene from "./WarehouseScene";
+import TopbarControls from "./TopbarControls";
+import type { User } from "@supabase/supabase-js";
 
 const n = (value: number) => value.toLocaleString("en-CA");
 const activityNames: Record<Activity, string> = {
@@ -174,6 +176,8 @@ export default function App() {
     }).data.subscription;
     return () => subscription?.unsubscribe();
   }, []);
+  const [accountUser, setAccountUser] = useState<User | null>(null);
+  const [authRequest, setAuthRequest] = useState<{ id: number; mode: "signup" | "login" } | null>(null);
   const [savedComparison, setSavedComparison] = useState<{ dataset: Dataset; date: string } | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
   const [reportSession, setReportSession] = useState(0);
@@ -398,7 +402,7 @@ export default function App() {
               Unsaved reports stay in this tab. Sign in to save selected days
               to your cloud account.
             </p>
-            <span className="free-label">Guest reports · Optional cloud account</span>
+            <span className="free-label">{accountUser ? "Signed in · Cloud reports" : "Guest reports · Optional cloud account"}</span>
           </div>
           <div className="sidebar-footer">
             <span className="workspace-icon">WR</span>
@@ -419,6 +423,7 @@ export default function App() {
               <strong>{pageInfo.title}</strong>
             </div>
             <div className="topbar-actions">
+            <TopbarControls user={accountUser} onAccount={() => navigate("account-history")} onAuth={mode => setAuthRequest(value => ({ id: (value?.id ?? 0) + 1, mode }))} onError={setNotice}/>
 
             <button
               className="help-button"
@@ -430,7 +435,10 @@ export default function App() {
             </div>
           </header>
           <nav className="mobile-navigation" aria-label="Mobile navigation">
-            {(Object.keys(pages) as Page[]).map(destination => <a key={destination} href={`#${destination}`} aria-current={page === destination ? "page" : undefined}>{destination === "overview" ? "Overview" : pages[destination].title}</a>)}
+            {(Object.keys(pages) as Page[]).map(destination => {
+              const Icon = { overview: LayoutDashboard, "account-history": Users, "shift-insights": BarChart3, import: Upload, guide: CircleHelp }[destination];
+              return <a key={destination} href={`#${destination}`} aria-current={page === destination ? "page" : undefined}><Icon size={19}/><span>{{ overview: "Overview", "account-history": "Reports", "shift-insights": "Insights", import: "Import", guide: "Guide" }[destination]}</span></a>;
+            })}
           </nav>
           <main id="main" tabIndex={-1}>
             <div className="page-heading">
@@ -538,7 +546,7 @@ export default function App() {
               </div>
             )}
 
-              <AccountHistory active={page === "account-history"} dataset={dataset} date={date} onOpen={openSavedReport} onCompare={(dataset, date) => { setSavedComparison({ dataset, date }); navigate("shift-insights"); }} onSignOut={clearAccountData} />
+              <AccountHistory onUserChange={setAccountUser} authRequest={authRequest} active={page === "account-history"} dataset={dataset} date={date} onOpen={openSavedReport} onCompare={(dataset, date) => { setSavedComparison({ dataset, date }); navigate("shift-insights"); }} onSignOut={clearAccountData} />
             <div hidden={page !== "overview"}>
             {dataset && report ? (
               <>

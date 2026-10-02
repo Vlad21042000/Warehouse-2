@@ -2319,3 +2319,27 @@ h1 {
 @media print {
   .system-account { background: #edf0f4; }
 }
+
+/* Account entry is a native modal; report history remains a separate page. */
+.auth-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 28px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); color: var(--text); box-shadow: 0 24px 90px #0009; overflow-y: auto; }
+.auth-dialog::backdrop { background: #080a0dc9; backdrop-filter: blur(5px); }
+.auth-dialog-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 22px; }
+.auth-brand { display: flex; align-items: center; gap: 10px; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .1em; }
+.auth-dialog h2 { font-family: Manrope, sans-serif; font-size: 27px; margin-bottom: 10px; color: var(--text); }
+.auth-dialog > p { color: var(--muted); line-height: 1.6; font-size: 13px; margin-bottom: 22px; }
+.auth-dialog .account-form { max-width: none; }
+.auth-dialog .account-tabs { display: flex; flex-wrap: wrap; }
+.auth-dialog .account-tabs button { flex: 1; padding: 10px 8px; white-space: nowrap; }
+.auth-dialog .account-form input:not([type=checkbox]) { font-size: 16px; min-height: 46px; }
+.auth-dialog .account-form .button { width: 100%; justify-content: center; min-height: 46px; }
+.auth-guest-button { display: block; margin: 20px auto 0; padding: 9px; background: transparent; color: var(--muted); border: 0; font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.auth-guest-button:hover { color: var(--accent); }
+.account-guest { padding: 8px 0; }
+.account-guest p { color: var(--muted); margin: 10px 0 18px; line-height: 1.6; }
+.account-guest-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+@media screen and (max-width: 480px) {
+  .auth-dialog { padding: 22px 18px; }
+  .auth-dialog h2 { font-size: 24px; }
+  .auth-dialog .account-tabs button { font-size: 10px; }
+}
+@media print { .auth-dialog { display: none !important; } }

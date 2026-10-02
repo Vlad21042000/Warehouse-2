@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { Archive, Cloud, LogOut, ShieldCheck, UserRound } from 'lucide-react';
+import { Archive, Cloud, LogOut, ShieldCheck, UserRound, X } from 'lucide-react';
 import { cloud, CLOUD_TABLE, parseSnapshot, snapshotFingerprint, snapshotForDay, type SavedReport } from './cloud';
 import { formatDate, type Dataset } from './report';
 
@@ -9,10 +9,13 @@ type Profile = { user_id: string; email: string; created_at: string; verified_at
 type Mode = 'login' | 'signup' | 'reset' | 'password';
 const errorText = (error: unknown) => error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : 'The cloud request did not finish. Try again.';
 
-export default function AccountHistory({ dataset, date, onOpen, onCompare, onSignOut }: { dataset: Dataset | null; date: string; onOpen: (dataset: Dataset, date: string) => void; onCompare: (dataset: Dataset, date: string) => void; onSignOut: () => void }) {
+export default function AccountHistory({ dataset, date, onOpen, onCompare, onSignOut, active }: { active: boolean; dataset: Dataset | null; date: string; onOpen: (dataset: Dataset, date: string) => void; onCompare: (dataset: Dataset, date: string) => void; onSignOut: () => void }) {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(!cloud);
-  const [mode, setMode] = useState<Mode>('login');
+  const [mode, setMode] = useState<Mode>('signup');
+  const [authOpen, setAuthOpen] = useState(false);
+  const authDialog = useRef<HTMLDialogElement>(null);
+  const entryPromptShown = useRef(false);
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [error, setError] = useState('');
@@ -37,7 +40,7 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
       setRefresh(value => value + 1);
       setReports([]); setProfiles([]); setSelected([]); setCount(0); setUserCount(0); setPage(0);
       setUser(session?.user ?? null); setAuthReady(true);
-      if (event === 'PASSWORD_RECOVERY') { setMode('password'); setMessage('Choose a new password below.'); }
+      if (event === 'PASSWORD_RECOVERY') { setAuthOpen(true); setMode('password'); setMessage('Choose a new password below.'); }
       if (event === 'SIGNED_OUT') { setAdmin(false); setAdminUser(''); setPassword(''); onSignOut(); }
     });
     const initialGeneration = generation.current;
@@ -70,6 +73,34 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
     })();
     return () => { active = false; };
   }, [user?.id, ownerView, adminUser, page, archive, refresh]);
+
+  useEffect(() => {
+    if (!cloud || !authReady || entryPromptShown.current) return;
+    entryPromptShown.current = true;
+    if (!user) setAuthOpen(true);
+  }, [authReady, user]);
+
+  useEffect(() => {
+    if (user && mode !== 'password') setAuthOpen(false);
+  }, [user, mode]);
+
+  useEffect(() => {
+    const dialog = authDialog.current;
+    if (!dialog) return;
+    if (!authOpen) {
+      if (dialog.open) dialog.close();
+      setPassword('');
+      return;
+    }
+    if (!dialog.open) dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [authOpen]);
+
+  function openAuth(nextMode: Mode) {
+    setMode(nextMode); setError(''); setMessage(''); setPassword(''); setAuthOpen(true);
+  }
 
   async function authenticate(event: FormEvent) {
     event.preventDefault(); if (!cloud || busy) return;
@@ -132,17 +163,14 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
     setMessage('Both saved reports loaded. View the comparison in Shift intelligence.');
   }
 
-  return <section className="panel account-panel" id="account-history" aria-labelledby="account-title">
+  return <><section hidden={!active} className="panel account-panel" id="account-history" aria-labelledby="account-title">
     <div className="analytics-heading"><div><span className="eyebrow">YOUR WORKSPACE</span><h2 id="account-title"><Cloud size={20}/>Account & saved reports</h2><p>Keep selected daily reports in your account and compare them later.</p></div>{user && <button className="button secondary" disabled={busy} onClick={() => void action(async () => { const result = await cloud!.auth.signOut(); if (result.error) throw result.error; })}><LogOut size={15}/>Sign out</button>}</div>
     <p className="cloud-notice"><ShieldCheck size={15}/>Unsaved uploads stay in this tab. Reports you choose to save are stored in the cloud and can be viewed by you and the site owner. Never upload passwords, payment details or unrelated personal information.</p>
-    {!cloud ? <p className="message warning">Cloud accounts are not connected yet. You can continue using the reporting dashboard.</p> : !authReady ? <p role="status">Checking your account…</p> : (!user || mode === 'password') ? <form className="account-form" onSubmit={authenticate}>
-      <div className="account-tabs" role="group" aria-label="Account action">{(['login', 'signup', 'reset'] as const).map(value => <button type="button" key={value} aria-pressed={mode === value} onClick={() => { setMode(value); setError(''); setMessage(''); setPassword(''); }}>{value === 'login' ? 'Sign in' : value === 'signup' ? 'Register' : 'Reset password'}</button>)}</div>
-      <h3>{mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Recover your account' : mode === 'password' ? 'Set a new password' : 'Welcome back'}</h3>
-      {mode !== 'password' && <label>Email<input type="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)}/></label>}
-      {mode !== 'reset' && <label>Password<input type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'login' ? 1 : 12} maxLength={72} value={password} onChange={event => setPassword(event.target.value)}/>{mode !== 'login' && <small>Use at least 12 characters.</small>}</label>}
-      {mode === 'signup' && <label className="consent-checkbox"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)}/>I understand that saved reports are stored in the cloud and are accessible to the site owner.</label>}
-      <button className="button primary" disabled={busy}>{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Send reset link' : mode === 'password' ? 'Update password' : 'Sign in'}</button>
-    </form> : <>
+    {!cloud ? <p className="message warning">Cloud accounts are not connected yet. You can continue using the reporting dashboard.</p> : !authReady ? <p role="status">Checking your account…</p> : (!user || mode === 'password') ? <div className="account-guest">
+      <h3>Your reports, in your own account</h3>
+      <p>Create an account to save daily reports and compare shifts across devices.</p>
+      <div className="account-guest-actions"><button className="button primary" onClick={() => openAuth('signup')}>Create account</button><button className="button secondary" onClick={() => openAuth('login')}>Sign in</button></div>
+    </div> : <>
       <div className="account-identity"><UserRound size={17}/><strong>{user.email}</strong>{owner && <span className="count-badge">Site owner</span>}</div>
       <div className="analytics-controls"><label className="lookup-input">Report name<input aria-label="Saved report name" maxLength={120} placeholder="e.g. Afternoon shift" value={title} onChange={event => setTitle(event.target.value)}/></label><button className="button primary" disabled={busy || !dataset} onClick={() => void action(save)}>Save selected day</button></div>
       <div className="history-toolbar"><h3>{ownerView ? 'Owner dashboard' : 'My report history'}</h3><div>{owner && <button className="button secondary" aria-pressed={ownerView} onClick={() => { setAdmin(!admin); setPage(0); setSelected([]); setAdminUser(''); }}>{ownerView ? 'My reports' : 'Owner dashboard'}</button>}<button className="button secondary" onClick={() => { setArchive(!archive); setPage(0); }}><Archive size={14}/>{archive ? 'Active reports' : 'Archive'}</button><button className="text-button" disabled={busy || loading} onClick={() => setRefresh(value => value + 1)}>Refresh</button></div></div>
@@ -154,5 +182,23 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
       <div className="analytics-pager"><span>Page {page + 1} of {Math.max(1, Math.ceil(count / 25))}</span><div><button disabled={loading || page === 0} onClick={() => setPage(value => value - 1)}>Previous</button><button disabled={loading || (page + 1) * 25 >= count} onClick={() => setPage(value => value + 1)}>Next</button></div></div>
     </>}
     {message && <p className="message success" role="status">{message}</p>}{error && <p className="message error" role="alert">{error}</p>}
-  </section>;
+  </section>
+    <dialog ref={authDialog} className="auth-dialog" aria-labelledby="auth-dialog-title" aria-describedby="auth-dialog-description" onCancel={event => { if (busy) event.preventDefault(); else setAuthOpen(false); }} onClose={() => setAuthOpen(false)}>
+      <div className="auth-dialog-heading">
+        <div className="auth-brand"><Cloud size={24}/><span>WAREHOUSE REPORTING</span></div>
+        <button type="button" className="icon-button" aria-label="Close account window" disabled={busy} onClick={() => setAuthOpen(false)}><X size={20}/></button>
+      </div>
+      <h2 id="auth-dialog-title">{mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Recover your account' : mode === 'password' ? 'Set a new password' : 'Welcome back'}</h2>
+      <p id="auth-dialog-description">Save daily reports, compare shifts and keep your warehouse history in one place.</p>
+      <form className="account-form" onSubmit={authenticate}>
+      <div className="account-tabs" role="group" aria-label="Account action">{(['login', 'signup', 'reset'] as const).map(value => <button type="button" key={value} disabled={busy} aria-pressed={mode === value} onClick={() => { setMode(value); setError(''); setMessage(''); setPassword(''); }}>{value === 'login' ? 'Sign in' : value === 'signup' ? 'Register' : 'Reset password'}</button>)}</div>
+      {mode !== 'password' && <label>Email<input type="email" autoFocus autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)}/></label>}
+      {mode !== 'reset' && <label>Password<input type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'login' ? 1 : 12} maxLength={72} value={password} onChange={event => setPassword(event.target.value)}/>{mode !== 'login' && <small>Use at least 12 characters.</small>}</label>}
+      {mode === 'signup' && <label className="consent-checkbox"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)}/>I understand that saved reports are stored in the cloud and are accessible to the site owner.</label>}
+      <button className="button primary" disabled={busy}>{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Send reset link' : mode === 'password' ? 'Update password' : 'Sign in'}</button>
+    </form>
+      {message && <p className="message success" role="status">{message}</p>}{error && <p className="message error" role="alert">{error}</p>}
+      <button type="button" className="auth-guest-button" disabled={busy} onClick={() => setAuthOpen(false)}>Continue as guest</button>
+    </dialog>
+  </>;
 }

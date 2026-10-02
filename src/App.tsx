@@ -538,9 +538,7 @@ export default function App() {
               </div>
             )}
 
-            <div hidden={page !== "account-history"}>
-              <AccountHistory dataset={dataset} date={date} onOpen={openSavedReport} onCompare={(dataset, date) => { setSavedComparison({ dataset, date }); navigate("shift-insights"); }} onSignOut={clearAccountData} />
-            </div>
+              <AccountHistory active={page === "account-history"} dataset={dataset} date={date} onOpen={openSavedReport} onCompare={(dataset, date) => { setSavedComparison({ dataset, date }); navigate("shift-insights"); }} onSignOut={clearAccountData} />
             <div hidden={page !== "overview"}>
             {dataset && report ? (
               <>

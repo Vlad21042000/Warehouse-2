@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -35,6 +35,7 @@ import {
 } from "./report";
 import type { ImportResult } from "./import";
 import Insights from "./Insights";
+import AccountHistory from "./AccountHistory";
 
 const n = (value: number) => value.toLocaleString("en-CA");
 const activityNames: Record<Activity, string> = {
@@ -136,6 +137,7 @@ function EmployeeTable({
 }
 
 export default function App() {
+  const [savedComparison, setSavedComparison] = useState<{ dataset: Dataset; date: string } | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
   const [reportSession, setReportSession] = useState(0);
   const [dataset, setDataset] = useState<Dataset | null>(initialData);
@@ -200,6 +202,7 @@ export default function App() {
   function activate(data: Dataset) {
     setReportSession(session => session + 1);
     setSelectedEmployee(null);
+    setSavedComparison(null);
     setDataset(data);
     setDate(data.dates.at(-1)!);
     setSearch("");
@@ -312,8 +315,17 @@ export default function App() {
     });
     input.current?.click();
   }
+  const clearAccountData = useCallback(() => {
+    setSelectedEmployee(null); setSavedComparison(null); setDataset(null);
+    setImported(null); setSearch(""); setError(""); setNotice("");
+    setReportSession(session => session + 1);
+  }, []);
+  function openSavedReport(data: Dataset, selectedDate: string) {
+    activate(data); setDate(selectedDate); setImported(null); setSheet(data.sheet);
+  }
   function clearReport() {
     setSelectedEmployee(null);
+    setSavedComparison(null);
     setDataset(null);
     setImported(null);
     setSearch("");
@@ -346,6 +358,7 @@ export default function App() {
               <LayoutDashboard size={19} />
               Overview
             </a>
+            <a href="#account-history" className="nav-item"><Users size={19}/>Account & history</a>
             <a href="#shift-insights" className="nav-item"><BarChart3 size={19}/>Shift intelligence</a>
             <button className="nav-item" onClick={openUpload}>
               <Upload size={19} />
@@ -363,10 +376,10 @@ export default function App() {
             <ShieldCheck size={24} />
             <strong>Your data stays with you</strong>
             <p>
-              Reports are processed in this browser tab and cleared when you
-              refresh.
+              Unsaved reports stay in this tab. Sign in to save selected days
+              to your cloud account.
             </p>
-            <span className="free-label">Free to use · No account needed</span>
+            <span className="free-label">Guest reports · Optional cloud account</span>
           </div>
           <div className="sidebar-footer">
             <span className="workspace-icon">WR</span>
@@ -497,6 +510,7 @@ export default function App() {
               </div>
             )}
 
+            <AccountHistory dataset={dataset} date={date} onOpen={openSavedReport} onCompare={(dataset, date) => setSavedComparison({ dataset, date })} onSignOut={clearAccountData} />
             {dataset && report ? (
               <>
                 <div className="report-toolbar">
@@ -776,7 +790,7 @@ export default function App() {
                     </span>
                   </div>
                 </section>
-                <Insights key={reportSession} dataset={dataset} report={report} selectedEmployee={selectedEmployee} onEmployee={setSelectedEmployee} />
+                <Insights key={reportSession} dataset={dataset} report={report} savedComparison={savedComparison} selectedEmployee={selectedEmployee} onEmployee={setSelectedEmployee} />
                 <div className="below-report">
                   <details className="import-details">
                     <summary>Report details & calculation notes</summary>
@@ -874,7 +888,7 @@ export default function App() {
               <span>Warehouse Reporting</span>
               <span>
                 <ShieldCheck size={14} />
-                Your files never leave this browser tab.
+                Unsaved files stay in this tab. Cloud saving is optional.
               </span>
             </footer>
           </main>

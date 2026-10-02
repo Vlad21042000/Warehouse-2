@@ -1,0 +1,28 @@
+/* Shared paper layout for the screen preview and the printed report. */
+.print-document { --navy: #163d68; display: flex; flex-direction: column; width: var(--report-width, 8in); min-height: var(--report-height, 9.42in); color: #23344a; font: 9pt Arial, sans-serif; background: white; }
+.print-document header { background: #163d68; color: white; padding: 8pt 9pt; margin-bottom: 6pt; }
+.print-document header h1 { font: bold 15pt Arial, sans-serif; color: white; letter-spacing: 0; margin: 0 0 5pt; }
+.print-document header p { font-size: 9pt; overflow-wrap: anywhere; }
+.print-document .print-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; margin-bottom: 8pt; }
+.print-document .print-summary h2 { background: #163d68; color: white; padding: 4pt 6pt; font: bold 10pt Arial, sans-serif; margin-bottom: 5pt; }
+.print-document .print-summary p { display: flex; justify-content: space-between; padding: 3pt 4pt; font-size: 8pt; gap: 5pt; }
+.print-document .print-team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5pt; }
+.print-document .print-summary p:nth-child(odd) { background: #f7f8fa; }
+.print-document .print-table { flex: 1; min-width: 0; --row-font: min(9pt, calc(270pt / var(--employee-count))); --row-padding: min(1pt, calc(40pt / var(--employee-count))); font-size: var(--row-font); white-space: normal; table-layout: fixed; line-height: 1.05; width: 100%; border-collapse: collapse; }
+.print-document .print-table th, .print-document .print-table td { padding: var(--row-padding) 3pt !important; text-align: center; border-color: #e2e7ee; color: #23344a; font-size: var(--row-font); font-family: Arial, sans-serif; }
+.print-document .print-table th:nth-child(2) { text-align: left; width: 25%; }
+.print-document .print-table thead th { background: #163d68; color: white; font-size: 8pt; font-weight: bold; }
+.print-document .print-table thead th:first-child { width: 6%; }
+.print-document .print-table tbody th { overflow-wrap: anywhere; }
+.print-document .print-table tbody tr { height: calc(390pt / var(--employee-count)); }
+.print-document .print-table .employee-name { display: block; font-size: inherit; }
+.print-document .print-table .rank-number { font-size: var(--row-font); color: inherit; }
+.print-document .print-table .rank-1 { background: #fff1b8 !important; }
+.print-document .print-table .rank-3 { background: #ffe0bd !important; }
+.print-document .print-table .system-account { background: #edf0f4; }
+.print-document .system-account-label { color: #566780; }
+.print-document .print-table tfoot, .print-document .print-table tfoot th, .print-document .print-table tfoot td { background: #163d68; color: white; }
+.print-document .print-table tfoot th, .print-document .print-table tfoot td { padding: 4pt 3pt !important; }
+.print-document .print-notes { margin-top: 6pt; }
+.print-document .print-notes p { font-size: 7pt; line-height: 1.2; margin: 3pt 0; }
+.print-document .print-table tr { break-inside: avoid; }

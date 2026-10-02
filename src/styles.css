@@ -2451,3 +2451,51 @@ h1 {
   .appearance-dialog { padding: 22px 18px; }
 }
 @media print { .appearance-dialog, .account-menu, .topbar-icon { display: none !important; } }
+
+/* Calendar indexes a whole month; choosing a date filters report cards. */
+@media screen {
+  .report-calendar { max-width: 780px; margin: 24px 0; padding: 22px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+  .calendar-heading, .calendar-month { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .calendar-heading h3 { color: var(--text); font-size: 16px; }
+  .calendar-heading p, .calendar-summary { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .calendar-heading p { margin-top: 6px; }
+  .calendar-month { margin: 24px 0 18px; }
+  .calendar-month strong { font-family: Manrope, sans-serif; color: var(--text); font-size: 16px; }
+  .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; }
+  .calendar-weekdays { text-align: center; font-size: 10px; color: var(--muted); margin-bottom: 10px; }
+  .calendar-day { display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: center; min-height: 64px; padding: 8px 4px; border: 1px solid transparent; border-radius: 10px; background: var(--surface-raised); color: var(--muted); font: inherit; font-size: 14px; }
+  .calendar-day:disabled { opacity: .65; cursor: default; }
+  .calendar-day.has-reports { border-color: var(--border); background: var(--accent-soft); color: var(--accent); font-weight: 700; cursor: pointer; opacity: 1; }
+  .calendar-day small { font-size: 10px; font-weight: 400; }
+  .calendar-day[aria-pressed=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .calendar-day[aria-current=date] > span { text-decoration: underline; text-underline-offset: 4px; }
+  .calendar-summary { margin-top: 16px; }
+  .calendar-summary strong { display: block; color: var(--accent); margin-top: 8px; }
+  .print-preview-dialog { width: min(1040px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); height: calc(100dvh - 24px); padding: 0; margin: auto; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); box-shadow: 0 24px 90px #0009; }
+  .print-preview-dialog[open] { display: flex; flex-direction: column; }
+  .print-preview-dialog::backdrop { background: #080a0dc9; backdrop-filter: blur(5px); }
+  .preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .preview-heading h2 { font-family: Manrope, sans-serif; font-size: 22px; }
+  .preview-heading p { font-size: 12px; color: var(--muted); margin-top: 7px; }
+  .preview-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 16px 24px 12px; }
+  .preview-toolbar label { display: flex; flex-direction: column; gap: 7px; color: var(--muted); font-size: 11px; }
+  .preview-toolbar select { border: 1px solid var(--border); border-radius: 7px; background: var(--surface-raised); color: var(--text); padding: 9px; min-height: 40px; font: inherit; font-size: 12px; }
+  .preview-toolbar .button { margin-left: auto; min-height: 40px; }
+  .preview-note { color: var(--muted); font-size: 11px; line-height: 1.6; padding: 0 24px 16px; }
+  .preview-viewport { flex: 1; min-height: 0; overflow: auto; padding: 16px; background: var(--page); }
+  .preview-sheet-container { position: relative; margin: 0 auto; }
+  .preview-sheet { position: absolute; top: 0; left: 0; transform-origin: top left; box-sizing: border-box; padding: .75in .25in; background: white; box-shadow: 0 8px 28px #0004; }
+}
+@media screen and (max-width: 480px) {
+  .report-calendar { padding: 16px 10px; }
+  .calendar-grid, .calendar-weekdays { gap: 4px; }
+  .calendar-day { min-height: 50px; }
+  .calendar-count-label { display: none; }
+  .calendar-heading { padding: 0 5px; }
+  .preview-heading { padding: 16px; }
+  .preview-toolbar { padding: 14px 16px; gap: 10px; }
+  .preview-toolbar label { flex: 1; }
+  .preview-toolbar .button { width: 100%; justify-content: center; }
+  .preview-note { padding: 0 16px 12px; }
+}
+@media print { .print-preview-dialog, .print-preview-dialog::backdrop { display: none !important; } }

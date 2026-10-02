@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   LoaderCircle,
   Package,
   Printer,
+  FileSearch,
   Search,
   ShieldCheck,
   Trophy,
@@ -26,14 +27,16 @@ import {
   createDemo,
   SYSTEM_USERS,
   formatDate,
-  formatDuration,
   HEADERS,
   parseRows,
   type Activity,
   type Dataset,
-  type Employee,
 } from "./report";
 import type { ImportResult } from "./import";
+import EmployeeTable from "./EmployeeTable";
+import PrintReport from "./PrintReport";
+import PrintPreview from "./PrintPreview";
+import "./print-report.css";
 import Insights from "./Insights";
 import AccountHistory from "./AccountHistory";
 import { cloud } from "./cloud";
@@ -60,97 +63,6 @@ type Page = keyof typeof pages;
 function currentPage(): Page {
   const hash = window.location.hash.slice(1);
   return Object.hasOwn(pages, hash) ? hash as Page : "overview";
-}
-
-function EmployeeTable({
-  employees,
-  compact = false,
-  onEmployee,
-}: {
-  employees: Employee[];
-  compact?: boolean;
-  onEmployee?: (employee: string) => void;
-}) {
-  const totals = employees.reduce(
-    (acc, e) => ({
-      pick: acc.pick + e.counts.PICK,
-      put: acc.put + e.counts.PUT,
-      repln: acc.repln + e.counts.REPLN,
-      receipt: acc.receipt + e.counts.RECEIPT,
-      total: acc.total + e.total,
-    }),
-    { pick: 0, put: 0, repln: 0, receipt: 0, total: 0 },
-  );
-  return (
-    <table
-      className={compact ? "employee-table print-table" : "employee-table"}
-    >
-      <thead>
-        <tr>
-          <th scope="col">Rank</th>
-          <th scope="col">Employee</th>
-          <th scope="col">PICK</th>
-          <th scope="col">Pick time</th>
-          <th scope="col">
-            <abbr title="Pick lines divided by the elapsed time between first and last pick">
-              L/Hr
-            </abbr>
-          </th>
-          <th scope="col">PUT</th>
-          <th scope="col">REPLN</th>
-          <th scope="col">RECEIPT</th>
-          <th scope="col">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {employees.map((e, index) => (
-          <tr key={e.employee} className={`rank-${e.rank}${e.isSystem ? " system-account" : ""}${e.isSystem && !employees[index - 1]?.isSystem ? " system-first" : ""}`}>
-            <td>
-              <span className="rank-number">
-                {e.rank === 1 && !compact ? (
-                  <Trophy size={14} aria-hidden="true" />
-                ) : null}
-                {e.isSystem ? "—" : e.rank}
-              </span>
-            </td>
-            <th scope="row">
-              <span className="employee-name">
-                {!compact && (
-                  <span className="avatar" aria-hidden="true">
-                    {e.employee.replace(/[^A-Z]/g, "").slice(0, 2)}
-                  </span>
-                )}
-                {onEmployee && !compact ? <button className="employee-link" onClick={() => onEmployee(e.employee)} aria-label={`View ${e.employee} activity`}>{e.employee}</button> : e.employee}
-                {e.isSystem && <span className="system-account-label"> (System)</span>}
-              </span>
-            </th>
-            <td>{n(e.counts.PICK)}</td>
-            <td className="time-cell">{formatDuration(e.pickMinutes)}</td>
-            <td>{e.rate?.toFixed(2) ?? "—"}</td>
-            <td>{n(e.counts.PUT)}</td>
-            <td>{n(e.counts.REPLN)}</td>
-            <td>{n(e.counts.RECEIPT)}</td>
-            <td className="total-cell">{n(e.total)}</td>
-          </tr>
-        ))}
-      </tbody>
-      {!!employees.length && (
-        <tfoot>
-          <tr>
-            <td></td>
-            <th scope="row">{compact ? "Team total" : "Displayed total"}</th>
-            <td>{n(totals.pick)}</td>
-            <td>—</td>
-            <td>—</td>
-            <td>{n(totals.put)}</td>
-            <td>{n(totals.repln)}</td>
-            <td>{n(totals.receipt)}</td>
-            <td>{n(totals.total)}</td>
-          </tr>
-        </tfoot>
-      )}
-    </table>
-  );
 }
 
 export default function App() {
@@ -192,6 +104,7 @@ export default function App() {
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [activity, setActivity] = useState<Activity | "ALL">("ALL");
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [paper, setPaper] = useState<"Letter" | "A4">("Letter");
   const input = useRef<HTMLInputElement>(null);
   const report = useMemo(
@@ -449,6 +362,7 @@ export default function App() {
               </div>
               <div className="heading-actions" hidden={page !== "overview"}>
                 <button className="button secondary" onClick={openUpload}><Upload size={17}/>Import report</button>
+                <button className="button secondary" disabled={!report?.total || busy} onClick={() => setPreviewOpen(true)}><FileSearch size={17}/><span>Preview report</span></button>
                 <button
                   className="button secondary"
                   disabled={!report?.total || busy}
@@ -1002,47 +916,9 @@ export default function App() {
         </div>
       </div>
       {dataset && report && (
-        <section
-          id="print-report"
-          style={
-            { "--employee-count": Math.max(1, report.employees.length), "--report-width": paper === "Letter" ? "8in" : "7.77in", "--report-height": paper === "Letter" ? "9.42in" : "10.11in" } as CSSProperties
-          }
-        >
-          <header>
-            <h1>WAREHOUSE ACTIVITY DASHBOARD</h1>
-            <p>
-              {formatDate(report.date)} ·{" "}
-              {dataset.sample ? "SAMPLE DATA · " : ""}
-              {dataset.source}
-            </p>
-          </header>
-          <div className="print-summary">
-            <section>
-              <h2>TEAM SUMMARY</h2>
-              <div className="print-team-grid">
-                <div>
-                  {[["Staff", people.length], ["Total", report.total], ["PICK", report.counts.PICK], ["RECEIPT", report.counts.RECEIPT], ["PUT", report.counts.PUT], ["REPLN", report.counts.REPLN]].map(([label, value]) => <p key={label}><strong>{label}</strong><b>{n(Number(value))}</b></p>)}
-                </div>
-                <div><p>Date <b>{report.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$2/$3/$1")}</b></p><p>Source <b>Daily Activity</b></p></div>
-              </div>
-            </section>
-            <section>
-              <h2>KEY HIGHLIGHTS</h2>
-              <p>Most Total <b>{people[0] ? `${people[0].employee} (${n(people[0].total)})` : "—"}</b></p>
-              {(["PICK", "RECEIPT", "PUT", "REPLN"] as Activity[]).map(activity => {
-                const top = [...people].sort((a, b) => b.counts[activity] - a.counts[activity] || a.rank - b.rank)[0];
-                return <p key={activity}>Most {activity === "RECEIPT" ? "Receipt" : activity}<b>{top?.counts[activity] ? `${top.employee} (${n(top.counts[activity])})` : "—"}</b></p>;
-              })}
-              <p>Team pick rate <b>{report.rate?.toFixed(2) ?? "—"} lines/hr</b></p>
-            </section>
-          </div>
-          <EmployeeTable employees={report.employees} compact />
-          <div className="print-notes">
-            <p>System accounts included below employees: {SYSTEM_USERS.join(", ")}.</p>
-            <p>Pick Time = first-to-last PICK transaction, including breaks; a single PICK has no measurable time span. Counts are lines, not Qty.</p>
-          </div>
-        </section>
+        <PrintReport id="print-report" report={report} dataset={dataset} paper={paper}/>
       )}
+      {dataset && report && <PrintPreview open={previewOpen} onClose={() => setPreviewOpen(false)} report={report} dataset={dataset} paper={paper} onPaper={setPaper}/>}
       <style>{`@page { size: ${paper} portrait; margin: 0.75in 0.25in; }`}</style>
     </>
   );

@@ -4,6 +4,8 @@ import { Archive, Cloud, LogOut, ShieldCheck, UserRound, X } from 'lucide-react'
 import { cloud, CLOUD_TABLE, parseSnapshot, snapshotFingerprint, snapshotForDay, type SavedReport } from './cloud';
 import { formatDate, type Dataset } from './report';
 import ReportCards from './ReportCards';
+import ReportCalendar from './ReportCalendar';
+import { loadCalendarMonth, localMonth, type CalendarDay } from './calendar';
 
 const columns = 'id,user_id,title,report_date,source,created_at,archived_at,total_lines,pick_lines,put_lines,receipt_lines,repln_lines';
 type Profile = { user_id: string; email: string; created_at: string; verified_at: string | null; last_sign_in_at: string | null };
@@ -24,6 +26,9 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
   const [page, setPage] = useState(0); const [archive, setArchive] = useState(false); const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false); const [title, setTitle] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
+  const [month, setMonth] = useState(localMonth);
+  const [historyDay, setHistoryDay] = useState('');
+  const [calendarState, setCalendarState] = useState<{key: string; days: Record<string, CalendarDay>; loading: boolean; error: string}>({key: '', days: {}, loading: false, error: ''});
   const [admin, setAdmin] = useState(false); const [profiles, setProfiles] = useState<Profile[]>([]); const [userCount, setUserCount] = useState(0); const [adminUser, setAdminUser] = useState('');
   const generation = useRef(0);
   const previousUser = useRef<string | null>(null);
@@ -39,7 +44,7 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
       if (previousUser.current && previousUser.current !== nextUser) onSignOut();
       previousUser.current = nextUser;
       setRefresh(value => value + 1);
-      setReports([]); setProfiles([]); setSelected([]); setCount(0); setUserCount(0); setPage(0);
+      setReports([]); setProfiles([]); setSelected([]); setHistoryDay(''); setCalendarState({key: '', days: {}, loading: false, error: ''}); setCount(0); setUserCount(0); setPage(0);
       setUser(session?.user ?? null); onUserChange(session?.user ?? null); setAuthReady(true);
       if (event === 'PASSWORD_RECOVERY') { setAuthOpen(true); setMode('password'); setMessage('Choose a new password below.'); }
       if (event === 'SIGNED_OUT') { setAdmin(false); setAdminUser(''); setPassword(''); onSignOut(); }
@@ -61,6 +66,7 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
         query = archive ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
         if (!ownerView) query = query.eq('user_id', user.id);
         else if (adminUser) query = query.eq('user_id', adminUser);
+        if (historyDay) query = query.eq('report_date', historyDay);
         const result = await query;
         if (result.error) throw result.error;
         if (active && generation.current === version) { setReports((result.data ?? []) as SavedReport[]); setCount(result.count ?? 0); }
@@ -73,7 +79,19 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
       finally { if (active && generation.current === version) setLoading(false); }
     })();
     return () => { active = false; };
-  }, [user?.id, ownerView, adminUser, page, archive, refresh]);
+  }, [user?.id, ownerView, adminUser, page, archive, refresh, historyDay]);
+
+  const calendarKey = `${user?.id ?? ''}|${ownerView}|${adminUser}|${archive}|${month}|${refresh}`;
+  useEffect(() => {
+    if (!cloud || !user) return;
+    const controller = new AbortController();
+    setCalendarState({key: calendarKey, days: {}, loading: true, error: ''});
+    void loadCalendarMonth(cloud, month, {userId: user.id, ownerView, ownerUser: adminUser, archived: archive}, controller.signal)
+      .then(days => { if (!controller.signal.aborted) setCalendarState({key: calendarKey, days, loading: false, error: ''}); })
+      .catch(error => { if (!controller.signal.aborted) setCalendarState({key: calendarKey, days: {}, loading: false, error: errorText(error)}); });
+    return () => controller.abort();
+  }, [calendarKey, user?.id, month, ownerView, adminUser, archive]);
+  function selectHistoryDay(day: string) { setHistoryDay(day); setPage(0); setSelected([]); }
 
   useEffect(() => {
     if (!cloud || !authReady || entryPromptShown.current) return;
@@ -156,7 +174,7 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
     const fingerprint = await snapshotFingerprint(snapshot);
     const result = await cloud.from(CLOUD_TABLE).insert({ user_id: user.id, title: title.trim() || `${dataset.sample ? 'Sample · ' : ''}${formatDate(date)}`, report_date: date, source: dataset.source, payload: snapshot, fingerprint });
     if (result.error) { if (result.error.code === '23505') throw new Error('This exact report is already saved. Check your history or archive.'); throw result.error; }
-    setTitle(''); setPage(0); setArchive(false); setRefresh(value => value + 1); setMessage('Report saved to your account. It is available on your other devices after sign-in.');
+    setTitle(''); setPage(0); setArchive(false); setHistoryDay(''); setMonth(date.slice(0,7)); setRefresh(value => value + 1); setMessage('Report saved to your account. It is available on your other devices after sign-in.');
   }
   async function open(id: string, comparison = false) {
     const version = generation.current;
@@ -185,12 +203,13 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
     </div> : <>
       <div className="account-identity"><UserRound size={17}/><strong>{user.email}</strong>{owner && <span className="count-badge">Site owner</span>}</div>
       <div className="analytics-controls"><label className="lookup-input">Report name<input aria-label="Saved report name" maxLength={120} placeholder="e.g. Afternoon shift" value={title} onChange={event => setTitle(event.target.value)}/></label><button className="button primary" disabled={busy || !dataset} onClick={() => void action(save)}>Save selected day</button></div>
-      <div className="history-toolbar"><h3>{ownerView ? 'Owner dashboard' : 'My report history'}</h3><div>{owner && <button className="button secondary" aria-pressed={ownerView} onClick={() => { setAdmin(!admin); setPage(0); setSelected([]); setAdminUser(''); }}>{ownerView ? 'My reports' : 'Owner dashboard'}</button>}<button className="button secondary" onClick={() => { setArchive(!archive); setPage(0); }}><Archive size={14}/>{archive ? 'Active reports' : 'Archive'}</button><button className="text-button" disabled={busy || loading} onClick={() => setRefresh(value => value + 1)}>Refresh</button></div></div>
-      {ownerView && <div className="owner-summary"><strong>{userCount.toLocaleString()} registered users</strong><p>All account registrations, including unconfirmed emails. {profiles.length} most recent users shown.</p><label>Filter reports by user<select aria-label="Owner user filter" value={adminUser} onChange={event => { setAdminUser(event.target.value); setPage(0); }}><option value="">All users</option>{profiles.map(profile => <option key={profile.user_id} value={profile.user_id}>{profile.email}</option>)}</select></label><details className="analytics-details"><summary>Registered users</summary><div className="analytics-scroll"><table className="analytics-table"><thead><tr><th>Email</th><th>Registered</th><th>Verified</th><th>Last sign-in</th></tr></thead><tbody>{profiles.map(profile => <tr key={profile.user_id}><td>{profile.email}</td><td>{new Date(profile.created_at).toLocaleDateString()}</td><td>{profile.verified_at ? 'Yes' : 'Pending'}</td><td>{profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString() : '—'}</td></tr>)}</tbody></table></div></details></div>}
+      <div className="history-toolbar"><h3>{ownerView ? 'Owner dashboard' : 'My report history'}</h3><div>{owner && <button className="button secondary" aria-pressed={ownerView} onClick={() => { setAdmin(!admin); setHistoryDay(''); setPage(0); setSelected([]); setAdminUser(''); }}>{ownerView ? 'My reports' : 'Owner dashboard'}</button>}<button className="button secondary" onClick={() => { setArchive(!archive); setHistoryDay(''); setPage(0); }}><Archive size={14}/>{archive ? 'Active reports' : 'Archive'}</button><button className="text-button" disabled={busy || loading} onClick={() => setRefresh(value => value + 1)}>Refresh</button></div></div>
+      {ownerView && <div className="owner-summary"><strong>{userCount.toLocaleString()} registered users</strong><p>All account registrations, including unconfirmed emails. {profiles.length} most recent users shown.</p><label>Filter reports by user<select aria-label="Owner user filter" value={adminUser} onChange={event => { setAdminUser(event.target.value); setHistoryDay(''); setPage(0); }}><option value="">All users</option>{profiles.map(profile => <option key={profile.user_id} value={profile.user_id}>{profile.email}</option>)}</select></label><details className="analytics-details"><summary>Registered users</summary><div className="analytics-scroll"><table className="analytics-table"><thead><tr><th>Email</th><th>Registered</th><th>Verified</th><th>Last sign-in</th></tr></thead><tbody>{profiles.map(profile => <tr key={profile.user_id}><td>{profile.email}</td><td>{new Date(profile.created_at).toLocaleDateString()}</td><td>{profile.verified_at ? 'Yes' : 'Pending'}</td><td>{profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString() : '—'}</td></tr>)}</tbody></table></div></details></div>}
+      <ReportCalendar month={month} days={calendarState.key === calendarKey ? calendarState.days : {}} selectedDay={historyDay} loading={calendarState.key !== calendarKey || calendarState.loading} error={calendarState.key === calendarKey ? calendarState.error : ''} onMonth={value => {setMonth(value); selectHistoryDay('');}} onDay={selectHistoryDay} onRetry={() => setRefresh(value => value + 1)}/>
       <p className="analytics-caption">{count.toLocaleString()} {archive ? 'archived' : 'saved'} reports. Select two to compare. Archived reports can be restored.</p>
       <button className="button secondary" disabled={busy || selected.length !== 2} onClick={() => void action(compareSelected)}>Compare selected reports ({selected.length}/2)</button>
       {loading ? <p role="status">Loading report history…</p> : <ReportCards reports={reports} selected={selected} busy={busy} canCompare={!!dataset} userId={user.id} archived={archive} ownerView={ownerView} emails={new Map(profiles.map(profile => [profile.user_id, profile.email]))} onSelect={id => setSelected(value => value.includes(id) ? value.filter(item => item !== id) : value.length < 2 ? [...value, id] : value)} onOpen={id => void action(() => open(id))} onCompare={id => void action(() => open(id, true))} onArchive={id => void action(() => archiveReport(id))}/>}
-      {!loading && !reports.length && <p className="analytics-empty">{archive ? 'Your archive is empty.' : 'No saved reports yet. Save a selected day above.'}</p>}
+      {!loading && !reports.length && <p className="analytics-empty">{historyDay ? 'No reports on this date. Choose All dates or another highlighted day.' : archive ? 'Your archive is empty.' : 'No saved reports yet. Save a selected day above.'}</p>}
       <div className="analytics-pager"><span>Page {page + 1} of {Math.max(1, Math.ceil(count / 25))}</span><div><button disabled={loading || page === 0} onClick={() => setPage(value => value - 1)}>Previous</button><button disabled={loading || (page + 1) * 25 >= count} onClick={() => setPage(value => value + 1)}>Next</button></div></div>
     </>}
     {message && <p className="message success" role="status">{message}</p>}{error && <p className="message error" role="alert">{error}</p>}

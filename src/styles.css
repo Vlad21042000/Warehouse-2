@@ -2288,3 +2288,5 @@ h1 {
   .guide-page, .import-page-note { padding: 20px; }
   .heading-actions { flex-wrap: wrap; }
 }
+/* Focus moves to the page for screen readers; interactive controls retain focus rings. */
+#main:focus { outline: none; }

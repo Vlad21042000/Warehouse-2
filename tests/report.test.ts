@@ -34,15 +34,15 @@ const data = [
   row("PUT", "BFITZ00", "12:00"),
 ];
 
-test("counts rows, carries transaction types down, excludes accounts, and ranks ties by picks", () => {
+test("counts rows, carries transaction types down, includes systems below people, and ranks ties by picks", () => {
   const dataset = parseRows(data, "fixture.csv", "Daily Activity");
   const report = buildReport(dataset, "2026-09-18");
-  assert.equal(report.total, 6);
-  assert.deepEqual(report.counts, { PICK: 2, PUT: 1, REPLN: 1, RECEIPT: 2 });
-  assert.equal(dataset.audit.excluded, 3);
+  assert.equal(report.total, 9);
+  assert.deepEqual(report.counts, { PICK: 4, PUT: 2, REPLN: 1, RECEIPT: 2 });
+  assert.equal(dataset.audit.excluded, 0);
   assert.deepEqual(
     report.employees.map((e) => e.employee),
-    ["ALEX", "SAM"],
+    ["ALEX", "SAM", "EXACTASVC", "JDEJOBS", "BFITZ00"],
   );
   assert.equal(report.employees[0].pickMinutes, 120);
   assert.equal(report.employees[0].rate, 1);
@@ -123,7 +123,7 @@ test("accepts title rows and repeated headers; audits invalid and unsupported ro
     "fixture.csv",
     "Daily",
   );
-  assert.equal(dataset.transactions.length, 6);
+  assert.equal(dataset.transactions.length, 9);
   assert.equal(dataset.audit.unsupported, 1);
   assert.equal(dataset.audit.invalid, 2);
   assert.equal(
@@ -154,7 +154,7 @@ test("imports actual XLSX, legacy XLS, CSV and a chosen worksheet", () => {
     );
     assert.equal(
       parseSheet(input, input.sheets[0].name).transactions.length,
-      6,
+      9,
     );
   }
 });
@@ -174,11 +174,11 @@ test("exports one styled worksheet with typed durations, formulas, totals and on
   assert.equal(ws.getCell("D13").value, 120 / 1440);
   assert.equal(ws.getCell("D13").numFmt, "[h]:mm");
   assert.equal(ws.getCell("E13").result, 1);
-  assert.equal(ws.getCell("I15").result, 6);
+  assert.equal(ws.getCell("I18").result, 9);
   const buffer = await wb.xlsx.writeBuffer();
   const saved = read(buffer, { type: "buffer" });
   assert.deepEqual(saved.SheetNames, ["Activity Dashboard"]);
-  assert.equal(saved.Sheets["Activity Dashboard"].I15.v, 6);
+  assert.equal(saved.Sheets["Activity Dashboard"].I18.v, 9);
   assert.equal(saved.Sheets["Activity Dashboard"].E13.v, 1);
   assert.equal(
     createReportWorkbook(report, dataset, "A4").worksheets[0].pageSetup
@@ -248,13 +248,13 @@ test('hourly charts and heatmap reconcile counts including missing and midnight 
   const dataset = parseRows([HEADERS, row('PICK', 'ALEX', '00:00'), row('PUT', 'ALEX', '23:59'), row('RECEIPT', 'SAM', ''), row('PICK', 'JDEJOBS', '00:00'), row('PICK', 'ALEX', '09:00', '09/19/2026')], 'hours.csv', 'Daily');
   const rows = dataset.transactions.filter(row => row.date === '2026-09-18');
   const hourly = hourlyActivity(rows);
-  assert.equal(hourly.hours[0], 1); assert.equal(hourly.hours[23], 1); assert.equal(hourly.missing, 1);
-  assert.equal(hourly.hours.reduce((sum, value) => sum + value, 0) + hourly.missing, 3);
+  assert.equal(hourly.hours[0], 2); assert.equal(hourly.hours[23], 1); assert.equal(hourly.missing, 1);
+  assert.equal(hourly.hours.reduce((sum, value) => sum + value, 0) + hourly.missing, 4);
   assert.equal(hourlyActivity(rows, 'RECEIPT').missing, 1);
   const heat = heatmapRows(rows);
   assert.equal(heat.find(row => row.employee === 'ALEX')?.total, 2);
   assert.equal(heat.find(row => row.employee === 'SAM')?.missing, 1);
-  assert.equal(heatmapRows(rows, 'PICK').length, 1);
+  assert.equal(heatmapRows(rows, 'PICK').length, 2);
 });
 
 test('comparison includes employees absent on either day and handles zero baselines', () => {
@@ -283,4 +283,31 @@ test('lookup is case-insensitive, preserves duplicates, and does not match unrel
   const before = demoComparison(createDemo());
   assert.equal(before.sample, true);
   assert.ok(before.transactions.every(row => row.date === '2026-09-17' && (row.timestamp === null || new Date(row.timestamp).toISOString().startsWith('2026-09-17'))));
+});
+
+
+test('high-volume systems remain below people in report, heatmap, comparisons and Excel', () => {
+  const rows = [HEADERS, row('PICK', 'ALEX', '08:00'), row('PICK', 'ALEX', '09:00'), row('RECEIPT', 'SAM', '10:00')];
+  for (let i = 0; i < 30; i++) rows.push(row('PICK', 'JDEJOBS', i % 2 ? '10:00' : '08:00'));
+  rows.push(row('PICK', 'EXACTASVC', '08:00'), row('PUT', 'BFITZ00', '10:00'));
+  const dataset = parseRows(rows, 'systems.csv', 'Daily');
+  const report = buildReport(dataset, '2026-09-18');
+  assert.deepEqual(report.employees.map(e => e.employee), ['ALEX', 'SAM', 'JDEJOBS', 'EXACTASVC', 'BFITZ00']);
+  assert.deepEqual(report.employees.map(e => e.rank), [1, 2, 0, 0, 0]);
+  assert.equal(report.total, 35);
+  assert.equal(report.counts.PICK, 33);
+  assert.equal(report.rate, 2);
+  assert.equal(report.pickMinutes, 60);
+  assert.equal(report.timedPicks, 2);
+  assert.deepEqual(heatmapRows(dataset.transactions).slice(0,2).map(e => e.employee), ['ALEX', 'SAM']);
+  assert.ok(compareEmployees(report, buildReport(dataset, '2026-09-17')).slice(0,2).every(e => !['JDEJOBS','EXACTASVC','BFITZ00'].includes(e.employee)));
+  const ws = createReportWorkbook(report, dataset).worksheets[0];
+  assert.equal(ws.getCell('C5').value, 2);
+  assert.equal(ws.getCell('A15').value, '—');
+  assert.match(String(ws.getCell('B15').value), /JDEJOBS.*System/);
+  assert.match(String(ws.getCell('H6').value ?? ws.getCell('F6').value), /ALEX/);
+  assert.equal(ws.getCell('I18').result, 35);
+  const onlySystems = buildReport(parseRows([HEADERS,row('PICK','JDEJOBS','08:00'),row('PICK','JDEJOBS','09:00')], 'system-only.csv','Daily'), '2026-09-18');
+  assert.equal(onlySystems.employees[0].rank, 0);
+  assert.equal(onlySystems.rate, null);
 });

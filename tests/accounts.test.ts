@@ -18,7 +18,7 @@ test('saved snapshots preserve one day and reject corrupt transactions', async (
   assert.throws(() => parseSnapshot(corrupt, day), /invalid transactions/);
   corrupt.dataset.transactions[0].timestamp = null;
   corrupt.dataset.transactions[0].employee = 'JDEJOBS';
-  assert.throws(() => parseSnapshot(corrupt, day), /invalid transactions/);
+  assert.equal(parseSnapshot(corrupt, day).dataset.transactions[0].employee, 'JDEJOBS');
 });
 
 test('Postgres enforces account isolation and trusted owner read access', async () => {
@@ -70,7 +70,7 @@ test('Postgres enforces account isolation and trusted owner read access', async 
     await db.query('update public.warehouse_reports set archived_at=now() where id=$1',[saved.id]);
     await db.query('update public.warehouse_reports set archived_at=null where id=$1',[saved.id]);
     await assert.rejects(db.exec('delete from public.warehouse_reports'), /permission denied/);
-    const corrupt = structuredClone(snapshot); corrupt.dataset.transactions[0].employee = 'JDEJOBS';
+    const corrupt = structuredClone(snapshot); corrupt.dataset.transactions[0].activity = 'BAD' as never;
     await assert.rejects(db.query(insert,[a,'Bad report',day,demo.source,'a'.repeat(64),JSON.stringify(corrupt)]), /check constraint/);
     await db.exec('reset role; set role anon');
     await assert.rejects(db.exec('select * from public.warehouse_reports'), /permission denied/);

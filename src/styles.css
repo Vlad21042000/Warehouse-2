@@ -2124,3 +2124,144 @@ h1 {
 .owner-summary p { color: #7d92ac; font-size: 11px; line-height: 1.7; margin: 9px 0 16px; }
 @media (max-width: 760px) { .account-panel { padding: 18px 14px; } .account-identity { flex-wrap: wrap; } }
 @media print { .account-panel { display: none !important; } }
+
+/* Screen palette is separate from the ink-friendly one-page report. */
+@media screen {
+  :root {
+    color-scheme: dark;
+    --page: #0b1118;
+    --surface: #131d28;
+    --surface-raised: #1a2836;
+    --surface-hover: #213443;
+    --text: #e8f0f5;
+    --text-secondary: #b7c7d5;
+    --muted: #9aafc2;
+    --border: #304354;
+    --accent: #5eead4;
+    --accent-ink: #082a29;
+    --accent-soft: #173c3a;
+    --navy: #5eead4;
+    --blue: #5eead4;
+    --chart-current: #5eead4;
+    --chart-baseline: #e8bb68;
+    --heat-rgb: 94, 234, 212;
+    --heat-empty: #1a2836;
+    --heat-text: #e8f0f5;
+    --heat-strong-text: #082a29;
+    color: var(--text);
+    background: var(--page);
+  }
+  body { background: var(--page); }
+  ::selection { background: #245955; color: #fff; }
+  .sidebar, .topbar, .skip-link, .upload-panel, .panel, .stat-card,
+  .empty-panel, .guide-dialog, .employee-dialog { background: var(--surface); }
+  .sidebar { box-shadow: 8px 0 30px #00000018; }
+  .brand-mark, .button.primary, .account-tabs button[aria-pressed=true] {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+  }
+  .button.primary:hover:not(:disabled) { background: #9af3e5; border-color: #9af3e5; }
+  .button.primary { box-shadow: 0 3px 14px #5eead414; }
+  .button.secondary, .account-tabs button, .history-actions button,
+  .analytics-pager button { background: var(--surface-raised); color: var(--text-secondary); border-color: var(--border); box-shadow: none; }
+  .button.secondary:hover:not(:disabled), .history-actions button:hover:not(:disabled),
+  .analytics-pager button:hover:not(:disabled), .account-tabs button:hover:not(:disabled) {
+    background: var(--surface-hover); color: var(--text); border-color: var(--accent);
+  }
+  .account-tabs button[aria-pressed=true]:hover:not(:disabled) { background: #9af3e5; color: var(--accent-ink); }
+  h1, .upload-copy strong, .stat-number, .panel-heading h2,
+  .performance-heading h2, .activity-legend strong, .highlight-grid strong,
+  .empty-panel h2, .no-results strong, .dialog-heading h2, .guide-steps h3,
+  .guide-note strong, .analytics-title, .analytics-heading h3, .timeline-title,
+  .comparison-metrics strong, .profile-header h2, .profile-metrics strong,
+  .account-panel h2, .history-toolbar h3, .owner-summary strong { color: var(--text); }
+  .brand-sub, .nav-label, .nav-item, .sidebar-bottom, .sidebar-bottom p,
+  .free-label, .sidebar-footer div > span, .breadcrumb, .help-button, .eyebrow,
+  .upload-copy p, .upload-copy p span, .source-name, .stat-label,
+  .stat-label > svg, .stat-label > span, .stat-number > span,
+  .stat-description, .panel-heading > span, .panel-heading > svg,
+  .activity-legend > div, .activity-legend small, .highlight-label,
+  .highlight-grid > div > span:last-child, .performance-heading p,
+  .search-control, .search-control input::placeholder, .activity-tabs button,
+  .rank-number, .table-footer, .import-details, .paper-control, .page-footer,
+  .no-results, .empty-panel p, .guide-steps p, .guide-note p, .template-row p span,
+  .analytics-title p, .analytics-heading p, .analytics-controls label,
+  .analytics-caption, .comparison-summary span, .comparison-metrics span,
+  .comparison-metrics small, .comparison-metrics b, .analytics-details,
+  .chart-key, .heat-table th, .heat-legend, .analytics-pager, .analytics-empty,
+  .lookup-summary, .profile-header p, .profile-metrics span,
+  .account-form label, .owner-summary label, .history-table small,
+  .owner-summary p { color: var(--muted); }
+  .sidebar-bottom strong, .breadcrumb strong, .highlight-grid b,
+  .employee-table tbody th, .employee-table tbody td, .employee-table .time-cell,
+  .analytics-table tbody th, .analytics-table tbody td,
+  .account-identity { color: var(--text-secondary); }
+  .sidebar-bottom svg, .text-button, .employee-link, .import-details summary,
+  .empty-panel > svg, .tiny-square { color: var(--accent); }
+  .tiny-square { background: var(--accent); }
+  .nav-item:hover, .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+  .workspace-icon, .avatar, .count-badge, .sample-badge, .icon-button {
+    background: var(--surface-raised); color: var(--text-secondary); border-color: var(--border);
+  }
+  .upload-panel { border-color: #496578; }
+  .upload-panel.dragging { background: var(--accent-soft); border-color: var(--accent); }
+  .upload-icon, .guide-steps > div > b { background: var(--accent-soft); color: var(--accent); }
+  .date-control, .select-label select, .paper-control select, .search-control,
+  .analytics-controls input, .analytics-controls select, .analytics-search,
+  .account-form input:not([type=checkbox]), .owner-summary select {
+    background: var(--page); color: var(--text-secondary); border-color: var(--border);
+  }
+  .date-control select, .search-control input { color: var(--text); }
+  input::placeholder { color: var(--muted); opacity: 1; }
+  input, select, .consent-checkbox input, .history-table input { accent-color: var(--accent); }
+  input:focus-visible, select:focus-visible, button:focus-visible,
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); }
+  .search-control:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px #5eead422; }
+  input:-webkit-autofill { -webkit-text-fill-color: var(--text); box-shadow: 0 0 0 1000px var(--page) inset; caret-color: var(--text); }
+  .featured { background: linear-gradient(135deg, #173c3a, #163047); border-color: #397b73; box-shadow: 0 4px 20px #00000024; }
+  .featured .stat-number { color: var(--text); }
+  .featured .stat-label, .featured .stat-label > svg, .featured .stat-description { color: #b7ded8; }
+  .metric-pill, .imported-badge { background: #183c32; color: #98e5be; }
+  .activity-PICK { background: #5eead4; }
+  .activity-PUT { background: #79b8ff; }
+  .activity-REPLN { background: #c4a5f5; }
+  .activity-RECEIPT { background: #e8bb68; }
+  .operation-badge { color: #101c28; }
+  .highlight-grid > div, .activity-tabs, .employee-table th,
+  .employee-table td, .analytics-table th, .analytics-table td,
+  .profile-header, .profile-metrics > div, .comparison-metrics > div {
+    border-color: var(--border);
+  }
+  .activity-tabs button:hover, .activity-tabs button.selected { color: var(--accent); }
+  .activity-tabs button.selected:after { background: var(--accent); }
+  .employee-table thead, .employee-table tfoot, .analytics-table thead th,
+  .analytics-table tbody tr:nth-child(even), .profile-header, .guide-note,
+  .owner-summary { background: var(--surface-raised); color: var(--text-secondary); }
+  .employee-table .total-cell { color: var(--accent); }
+  .employee-table tbody tr:hover { background: var(--surface-hover); }
+  .rank-1 { background: #342e1b; }
+  .rank-1 .rank-number { color: #f0cf78; }
+  .rank-1 .avatar { background: #4b3d1c; color: #f0cf78; border-color: #756039; }
+  .rank-3 { background: #33271e; }
+  .rank-3 .rank-number { color: #f0b885; }
+  .rank-3 .avatar { background: #4b3424; color: #f0b885; border-color: #775037; }
+  .key-dot.gold { background: #f0cf78; }
+  .key-dot.orange { background: #f0b885; }
+  .message.error { background: #3a2129; color: #ffb1b7; border-color: #78404c; }
+  .message.success { background: #183c32; color: #98e5be; }
+  .message.warning { background: #3a301b; color: #f0d28a; }
+  .guide-dialog, .employee-dialog { color: var(--text-secondary); border-color: var(--border); box-shadow: 0 25px 100px #00000088; }
+  .guide-dialog::backdrop, .employee-dialog::backdrop { background: #03080dcc; }
+  .icon-button:hover { background: var(--surface-hover); color: var(--text); }
+  .upload-comparison:focus-within { outline-color: var(--accent); }
+  .comparison-summary, .cloud-notice { background: var(--accent-soft); color: #b7ded8; border-color: var(--accent); }
+  .comparison-metrics .delta-up { color: #98e5be; }
+  .comparison-metrics .delta-down { color: #f0b885; }
+  .employee-link:hover { color: #9af3e5; }
+  .key-current { background: var(--chart-current); }
+  .key-baseline { background: var(--chart-baseline); }
+  .heat-table th:first-child { background: var(--surface); }
+  .heat-table td { color: var(--text-secondary); }
+  .heat-cell:hover { outline-color: var(--accent); }
+  .heat-legend i { background: linear-gradient(to right, var(--heat-empty), var(--chart-current)); }
+  .owner-summary { border-color: var(--border); }
+}

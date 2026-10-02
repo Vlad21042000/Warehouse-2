@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { BRAND_NAME } from "./brand";
 import {
   SYSTEM_USERS,
   formatDate,
@@ -12,7 +13,7 @@ export function createReportWorkbook(
   paper: "Letter" | "A4" = "Letter",
 ) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Warehouse Reporting";
+  wb.creator = BRAND_NAME;
   wb.created = new Date();
   const ws = wb.addWorksheet("Activity Dashboard", {
     properties: { defaultRowHeight: 21 },
@@ -59,7 +60,7 @@ export function createReportWorkbook(
       };
     return cell;
   };
-  merged("A1:I1", "WAREHOUSE ACTIVITY DASHBOARD", navy, "FFFFFF", true).font = {
+  merged("A1:I1", BRAND_NAME.toUpperCase(), navy, "FFFFFF", true).font = {
     name: "Calibri",
     size: 19,
     bold: true,
@@ -221,7 +222,7 @@ export async function exportExcel(
   const [year, month, day] = report.date.split("-");
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Warehouse_Activity_Dashboard_${month}-${day}-${year}.xlsx`;
+  a.download = `VS_Warehouse_Report_${month}-${day}-${year}.xlsx`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

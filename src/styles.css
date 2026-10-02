@@ -2588,3 +2588,35 @@ h1 {
   .table-settings-footer .button { padding: 12px 24px; }
 }
 @media print { .table-settings-dialog, .table-settings-dialog::backdrop { display: none !important; } }
+
+/* Shared VS identity across desktop, mobile and account entry. */
+.vs-logo { display: block; object-fit: contain; flex-shrink: 0; }
+.brand-wordmark { display: block; min-width: 0; }
+.brand-name { display: block; font-family: Manrope, sans-serif; font-weight: 800; line-height: 1.3; letter-spacing: -.4px; white-space: nowrap; }
+.brand-name b { color: var(--accent); font-weight: inherit; }
+.brand-wordmark .brand-sub { margin-top: 4px; font-size: 9.5px; line-height: 1.3; letter-spacing: 2.2px; color: var(--muted); }
+@media screen {
+  .brand { gap: 9px; padding: 0; }
+  .brand .brand-logo { width: 46px; height: 46px; }
+  .brand .brand-name { font-size: 16px; }
+  .sidebar-footer .workspace-logo { width: 33px; height: 33px; }
+  .auth-brand { color: var(--text); letter-spacing: 0; }
+  .auth-brand .vs-logo { width: 44px; height: 44px; }
+  .auth-brand .brand-name { font-size: 16px; }
+}
+@media screen and (max-width: 1250px) {
+  .brand { gap: 8px; }
+  .brand .brand-logo { width: 38px; height: 38px; }
+  .brand .brand-name { font-size: 14px; }
+}
+@media screen and (max-width: 1050px) {
+  .brand .brand-logo { width: 34px; height: 34px; }
+  .brand .brand-name { font-size: 12.5px; }
+  .brand-wordmark .brand-sub { font-size: 9px; letter-spacing: 1.8px; }
+}
+@media screen and (max-width: 740px) {
+  .mobile-brand { min-width: 0; gap: 7px; text-decoration: none; }
+  .mobile-brand .vs-logo { width: 34px; height: 34px; }
+  .mobile-brand .brand-name { font-size: 12px; }
+  .mobile-brand .brand-sub { font-size: 8px; letter-spacing: 1.7px; margin-top: 3px; }
+}

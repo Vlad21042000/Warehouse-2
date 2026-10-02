@@ -6,6 +6,7 @@ import { formatDate, type Dataset } from './report';
 import ReportCards from './ReportCards';
 import ReportCalendar from './ReportCalendar';
 import { loadCalendarMonth, localMonth, type CalendarDay } from './calendar';
+import { BrandMark, BrandWordmark } from './Brand';
 
 const columns = 'id,user_id,title,report_date,source,created_at,archived_at,total_lines,pick_lines,put_lines,receipt_lines,repln_lines';
 type Profile = { user_id: string; email: string; created_at: string; verified_at: string | null; last_sign_in_at: string | null };
@@ -216,7 +217,7 @@ export default function AccountHistory({ dataset, date, onOpen, onCompare, onSig
   </section>
     <dialog ref={authDialog} className="auth-dialog" aria-labelledby="auth-dialog-title" aria-describedby="auth-dialog-description" onCancel={event => { if (busy) event.preventDefault(); else setAuthOpen(false); }} onClose={() => setAuthOpen(false)}>
       <div className="auth-dialog-heading">
-        <div className="auth-brand"><Cloud size={24}/><span>WAREHOUSE REPORTING</span></div>
+        <div className="auth-brand"><BrandMark /><BrandWordmark /></div>
         <button type="button" className="icon-button" aria-label="Close account window" disabled={busy} onClick={() => setAuthOpen(false)}><X size={20}/></button>
       </div>
       <h2 id="auth-dialog-title">{mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Recover your account' : mode === 'password' ? 'Set a new password' : 'Welcome back'}</h2>

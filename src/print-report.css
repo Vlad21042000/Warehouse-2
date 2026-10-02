@@ -1,6 +1,8 @@
 /* Shared paper layout for the screen preview and the printed report. */
 .print-document { --navy: #163d68; display: flex; flex-direction: column; width: var(--report-width, 8in); min-height: var(--report-height, 9.42in); color: #23344a; font: 9pt Arial, sans-serif; background: white; }
-.print-document header { background: #163d68; color: white; padding: 8pt 9pt; margin-bottom: 6pt; }
+.print-document header { display: flex; align-items: center; gap: 9pt; background: #163d68; color: white; padding: 8pt 9pt; margin-bottom: 6pt; }
+.print-document header > div { min-width: 0; }
+.print-document .print-logo { width: 34pt; height: 34pt; flex: 0 0 34pt; object-fit: contain; }
 .print-document header h1 { font: bold 15pt Arial, sans-serif; color: white; letter-spacing: 0; margin: 0 0 5pt; }
 .print-document header p { font-size: 9pt; overflow-wrap: anywhere; }
 .print-document .print-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; margin-bottom: 8pt; }

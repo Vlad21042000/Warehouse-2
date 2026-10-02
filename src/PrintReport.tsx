@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
 import EmployeeTable from './EmployeeTable';
+import { BrandMark } from './Brand';
+import { BRAND_NAME } from './brand';
 import { SYSTEM_USERS, formatDate, type Activity, type Dataset, type Report } from './report';
 const n = (value: number) => value.toLocaleString('en-CA');
 export default function PrintReport({report, dataset, paper, id}: {report: Report; dataset: Dataset; paper: 'Letter' | 'A4'; id?: string}) {
@@ -12,12 +14,16 @@ export default function PrintReport({report, dataset, paper, id}: {report: Repor
           }
         >
           <header>
-            <h1>WAREHOUSE ACTIVITY DASHBOARD</h1>
+            <BrandMark className="print-logo" />
+            <div>
+            <h1>{BRAND_NAME.toUpperCase()}</h1>
             <p>
+              Daily Activity Report ·{' '}
               {formatDate(report.date)} ·{" "}
               {dataset.sample ? "SAMPLE DATA · " : ""}
               {dataset.source}
             </p>
+            </div>
           </header>
           <div className="print-summary">
             <section>

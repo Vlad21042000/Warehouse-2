@@ -18,7 +18,6 @@ import {
   Trophy,
   Upload,
   Users,
-  Warehouse,
   X,
 } from "lucide-react";
 import {
@@ -42,6 +41,8 @@ import AccountHistory from "./AccountHistory";
 import { cloud } from "./cloud";
 import WarehouseScene from "./WarehouseScene";
 import TopbarControls from "./TopbarControls";
+import { BrandMark, BrandWordmark } from "./Brand";
+import { BRAND_NAME } from "./brand";
 import type { User } from "@supabase/supabase-js";
 
 const n = (value: number) => value.toLocaleString("en-CA");
@@ -78,7 +79,7 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onNavigation);
   }, []);
   useEffect(() => {
-    document.title = `${pages[page].title} · Warehouse Reporting`;
+    document.title = `${pages[page].title} · ${BRAND_NAME}`;
     window.scrollTo({ top: 0, behavior: "instant" });
     document.getElementById("main")?.focus({ preventScroll: true });
   }, [page]);
@@ -292,14 +293,10 @@ export default function App() {
           <a
             className="brand"
             href="#overview"
-            aria-label="Warehouse Reporting home"
+            aria-label={`${BRAND_NAME} home`}
           >
-            <span className="brand-mark">
-              <Warehouse size={24} />
-            </span>
-            <span>
-              Warehouse<span className="brand-sub">REPORTING</span>
-            </span>
+            <BrandMark className="brand-logo" />
+            <BrandWordmark />
           </a>
           <div className="nav-label">WORKSPACE</div>
           <nav aria-label="Main navigation">
@@ -318,18 +315,18 @@ export default function App() {
             <span className="free-label">{accountUser ? "Signed in · Cloud reports" : "Guest reports · Optional cloud account"}</span>
           </div>
           <div className="sidebar-footer">
-            <span className="workspace-icon">WR</span>
+            <BrandMark className="workspace-logo" />
             <div>
-              Warehouse workspace<span>Daily operations</span>
+              VS workspace<span>Daily operations</span>
             </div>
           </div>
         </aside>
         <div className="workspace">
           <header className="topbar">
-            <span className="mobile-brand">
-              <Warehouse size={22} />
-              Warehouse Reporting
-            </span>
+            <a className="mobile-brand" href="#overview" aria-label={`${BRAND_NAME} home`}>
+              <BrandMark />
+              <BrandWordmark />
+            </a>
             <div className="breadcrumb">
               <span>Workspace</span>
               <span>/</span>
@@ -904,7 +901,7 @@ export default function App() {
         </div>
             </section>
             <footer className="page-footer">
-              <span>Warehouse Reporting</span>
+              <span>{BRAND_NAME}</span>
               <span>
                 <ShieldCheck size={14} />
                 Unsaved files stay in this tab. Cloud saving is optional.

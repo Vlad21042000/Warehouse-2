@@ -11,7 +11,7 @@ A browser-based Daily Activity dashboard for warehouse teams. Import an Excel or
 - One-sheet A:I Excel dashboard with blue headers, team summary, key highlights, gold first place, orange third place, and calculation notes.
 - Letter portrait by default (0.75 in top/bottom, 0.25 in sides), fitted to one Excel page. A4 is also available.
 - Mobile layout, keyboard access, print view, synthetic sample report, and downloadable CSV header template.
-- No accounts, subscriptions, backend storage, or telemetry. Imported data remains in memory in the browser tab. Refreshing clears it. Fonts and all app dependencies are served with the site.
+- Optional email accounts and private cloud report history. Unsaved uploads remain in tab memory; selected days can be saved to Supabase and opened on other devices. Registration discloses that the site owner can view saved reports. Fonts and app dependencies are served with the site.
 
 ## Shift intelligence
 
@@ -59,10 +59,15 @@ Tests cover row counting, carry-down rules, exclusions, tie ranking, dates, miss
 
 ## Vercel deployment
 
-Import `Vlad21042000/Warehouse-2` into Vercel with the **Vite** preset. The root directory is the repository root. The build command is `npm run build` and the output directory is `dist`; these are declared in `vercel.json`. No environment variables, API keys or database are required. Use `main` for production deployments.
+Import `Vlad21042000/Warehouse-2` into Vercel with the **Vite** preset. The root directory is the repository root. The build command is `npm run build` and the output directory is `dist`; these are declared in `vercel.json`. The guest dashboard needs no backend. Cloud accounts require VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Production, a dedicated Supabase project, verified email delivery and the schema in supabase/schema.sql. See supabase/SETUP.md. Never expose service-role or SMTP credentials in Vite variables. Use `main` for production deployments.
 
 The SheetJS dependency is pinned to the official 0.20.3 distribution, and the lockfile pins all other dependencies. Excel export loads on demand, and file parsing runs in a Web Worker to keep the UI responsive.
 
 ## Scope
 
-This application processes exported files. It does not connect to JD Edwards, Exacta or OneGlass, and it does not synchronize reports across devices. Browser printing depends on the print dialog's paper, scale and header/footer settings. Excel explicitly fits the complete report to one page; very large employee lists will therefore print smaller.
+This application processes exported files. It does not connect to JD Edwards, Exacta or OneGlass, and it synchronizes only the daily snapshots a signed-in user explicitly saves. Browser printing depends on the print dialog's paper, scale and header/footer settings. Excel explicitly fits the complete report to one page; very large employee lists will therefore print smaller.
+
+
+## Accounts and history
+
+Register with a verified email, sign in, save a selected day, reopen it, or select two saved reports for comparison. Exact duplicate snapshots are rejected. Archive and restore are available for your own reports. Account history pages contain 25 reports. Owner access is granted through trusted Auth app_metadata to the agreed verified account; the owner dashboard lists users and can view their reports. Passwords and tokens are never included. Local Postgres tests verify RLS account isolation, forged metadata denial and owner read-only access.
